@@ -1,7 +1,7 @@
-#!usr/dev/env python
+#!/usr/bin/env python
 
 import rospy
-from ar_track_alvars.msg import *
+from ar_track_alvar_msgs.msg import *
 
 def tracker_callback(data):
     print data
@@ -19,6 +19,11 @@ def main():
         move()
     except rospy.ROSInterruptException:
         pass
+
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
 
 
 if __name__ == "__main__":
