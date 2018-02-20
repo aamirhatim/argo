@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 
+import sys
+sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
+import roboclaw as robo ## import RoboClaw library for motor controls
 import rospy
-from ar_track_alvar_msgs.msg import *
+from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers ## import AR tag custom messages (will remove)
 
 def tracker_callback(data):
-    print data
+    temp = AlvarMarker()
+    temp = data[0]
+    z = temp.pose.position.z
+    print z
 
 def move_luggo():
     print "moved!"
