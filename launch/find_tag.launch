@@ -8,7 +8,7 @@
 		<arg name="max_track_error" value="0.2" />
 		<arg name="cam_image_topic" value="/raspicam_node/image_raw" />
 		<arg name="cam_info_topic" value="/raspicam_node/camera_info" />
-		<arg name="output_frame" value="/tag_output" />
+		<arg name="output_frame" value="/raspicam_node/image_raw" />
 	</include>
 
 </launch>
