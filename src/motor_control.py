@@ -9,8 +9,16 @@ from ar_track_alvar_msgs.msg import * ## import AR tag custom messages (will rem
 class luggo_obj:
     def __init__(self):
         print "Connecting to motors..."
-        self.robo = Roboclaw("/dev/ttyACM0", 115200)
-        self.robo.Open()
+        self.motor_status = 0
+        try:
+            self.robo = Roboclaw("/dev/ttyACM0", 115200)
+            self.robo.Open()
+            self.address = 0x80
+        except:
+            print "Failed to connect to motors! Exiting."
+            self.motor_status = 1
+            return
+
         print "Motors detected!"
 
         print "Setting up ROS object..."
@@ -30,31 +38,42 @@ class luggo_obj:
         print dist
         self.move_luggo(dist)
 
+    def read_encoder(self):
+        enc1 = self.robo.ReadEncM1(self.address)
+        enc2 = self.robo.ReadEncM2(self.address)
+
+        print enc1
+        print enc2
+
     def move_luggo(self, distance):
-        address = 0x80
         max_speed = 127
         freeze = 0
+
+        read_enc()
+
         if distance == 0:
             print "Freeze"
-            self.robo.ForwardM1(address, freeze)
-            self.robo.ForwardM2(address, freeze)
+            self.robo.ForwardM1(self.address, freeze)
+            self.robo.ForwardM2(self.address, freeze)
         if distance > 45:
             print "Onward march!"
-            self.robo.ForwardM1(address, max_speed/4)
-            self.robo.ForwardM2(address, max_speed/4)
+            self.robo.ForwardM1(self.address, max_speed/4)
+            self.robo.ForwardM2(self.address, max_speed/4)
         elif distance < 43 and distance > 0:
             print "Retreat!"
-            self.robo.BackwardM1(address, max_speed/4)
-            self.robo.BackwardM2(address, max_speed/4)
+            self.robo.BackwardM1(self.address, max_speed/4)
+            self.robo.BackwardM2(self.address, max_speed/4)
         elif distance >= 43 and distance <= 45:
             print "Hold laddy!"
-            self.robo.ForwardM1(address, freeze)
-            self.robo.ForwardM2(address, freeze)
+            self.robo.ForwardM1(self.address, freeze)
+            self.robo.ForwardM2(self.address, freeze)
 
 def main():
     luggo = luggo_obj()
-    rospy.init_node("luggo_controller")
+    if luggo.motor_status == 0:
+        return 0
 
+    rospy.init_node("luggo_controller")
     try:
         rospy.spin()
     except KeyboardInterrupt:
