@@ -69,3 +69,9 @@ $ catkin_make
 ```
 
 ## Part 4: Launch
+### Manual Drive Mode
+To control with your keyboard, run the [`manual_drive.py`](/src/manual_drive.py) node:
+```
+rosrun luggo manual_drive.py
+```
+Control luggo using the WASD keys. Press 'e' to stop and 'q' to quit the node. You must press Enter for your command to register!
