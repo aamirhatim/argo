@@ -27,8 +27,8 @@ class Luggo:
 
     def move(self, data):
         address = self.address
-        left = data.x
-        right = data.y
+        left = data.x + 64
+        right = data.y + 64
         print round(left)
         print round(right)
 
