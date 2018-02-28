@@ -6,14 +6,15 @@ from roboclaw import Roboclaw ## import RoboClaw library for motor controls
 import rospy
 from geometry_msgs.msg import Point
 from luggo.msg import Encoder
+import time
 
 class Luggo:
     def __init__(self):
         print "Connecting to motors..."
         self.motor_status = 0
         try:
-            self.robo = Roboclaw("/dev/ttyACM0", 115200)
-            self.robo.Open()
+            self.luggo = Roboclaw("/dev/ttyACM0", 115200)
+            self.luggo.Open()
             self.address = 0x80
         except:
             print "Failed to connect to motors! Exiting."
@@ -31,12 +32,15 @@ class Luggo:
         address = self.address
         left = data.x + 64
         right = data.y + 64
-        # print round(left)
-        # print round(right)
+        print round(left)
+        print round(right)
 
-        # self.robo.ForwardBackwardM1(address, int(right))
-        # self.robo.ForwardBackwardM2(address, int(left))
-        enc = Encoder()
-        enc.encoder1 = 0
-        enc.encoder2 = 0
-        self.encoder.publish(enc)
+        # self.luggo.ForwardBackwardM1(address, int(right))
+        # self.luggo.ForwardBackwardM2(address, int(left))
+        # enc = Encoder()
+        # t = rospy.Time.now()
+        # enc.stamp.secs = t.secs
+        # enc.stamp.nsecs = t.nsecs
+        # enc.encoder1 = 1
+        # enc.encoder2 = 2
+        # self.encoder.publish(enc)

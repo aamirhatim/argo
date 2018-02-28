@@ -22,8 +22,8 @@ def path():
         print "moving"
         time = rospy.get_time()
         # (v,w) = line(time)
-        # (v,w) = eight(time)
-        (v,w) = circle(time)
+        (v,w) = eight(time)
+        # (v,w) = circle(time)
         Ul = (v-w*d)/r
         Ur = (v+w*d)/r
         # print Ul
@@ -39,14 +39,15 @@ def line(t):
     return (Vx,0)
 
 def eight(t):
-    speed = 14
-    # x-Position: x = 3*sin((4*t*pi)/speed)
-    vx = (12*pi/speed)*cos(4*pi*t/speed)
-    ax = (-48*pi*pi/(speed*speed))*sin(4*pi*t/speed)
+    speed = 5
+    T = 2*pi/speed
+    # x-Position: x = sin(2*t*T)
+    vx = 2*T*cos(2*t*T)
+    ax = (-4*T*T)*sin(2*t*T)
 
-    # y-Position: y = 3*sin((2*t*pi)/speed)
-    vy = (6*pi/speed)*cos(2*pi*t/speed)
-    ay = (-12*pi*pi/(speed*speed))*sin(2*pi*t/speed)
+    # y-Position: y = sin(t*T)
+    vy = T*cos(t*T)
+    ay = (-T*T)*sin(t*T)
 
     # Linear velocity:
     vl = sqrt((vx*vx) + (vy*vy))
