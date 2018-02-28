@@ -35,7 +35,8 @@ def path():
     while not rospy.is_shutdown():
         time = rospy.get_time()
         # (v,w) = line(time)
-        (v,w) = eight(time)
+        # (v,w) = eight(time)
+        (v,w) = circle(time)
         Ul = (v-w*d)/r
         Ur = (v+w*d)/r
         # print Ul
@@ -66,6 +67,23 @@ def eight(t):
 
     # reduce linear velocity by 25% so turtle stays within bounds of the sim
     # vl = vl*(0.75)
+
+    # Angular velocity:
+    w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))
+
+    return (vl,w)
+
+def circle(t):
+    # x = rCos(t), y = rSin(t)
+    r = .5
+    vx = -.5*sin(t)
+    ax = .5*cos(t)
+
+    vy = .5*cos(t)
+    ay = -.5*sin(t)
+
+    # Linear velocity:
+    vl = np.sqrt((vx*vx) + (vy*vy))
 
     # Angular velocity:
     w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))
