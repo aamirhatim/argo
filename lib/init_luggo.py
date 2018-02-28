@@ -35,8 +35,8 @@ class Luggo:
         print round(left)
         print round(right)
 
-        # self.luggo.ForwardBackwardM1(address, int(right))
-        # self.luggo.ForwardBackwardM2(address, int(left))
+        self.luggo.ForwardBackwardM1(address, int(right))
+        self.luggo.ForwardBackwardM2(address, int(left))
         # enc = Encoder()
         # t = rospy.Time.now()
         # enc.stamp.secs = t.secs
