@@ -74,13 +74,12 @@ def eight(t):
     return (vl,w)
 
 def circle(t):
-    # x = rCos(t), y = rSin(t)
-    r = .5
-    vx = -.5*sin(t)
-    ax = .5*cos(t)
+    # x = rCos(pi*t), y = rSin(pi*t)
+    vx = -.5*pi*sin(pi*t)
+    ax = -.5*pi*pi*cos(pi*t)
 
-    vy = .5*cos(t)
-    ay = -.5*sin(t)
+    vy = .5*pi*cos(pi*t)
+    ay = -.5*pi*pi*sin(pi*t)
 
     # Linear velocity:
     vl = np.sqrt((vx*vx) + (vy*vy))
