@@ -5,6 +5,7 @@ sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
 from roboclaw import Roboclaw ## import RoboClaw library for motor controls
 import rospy
 from geometry_msgs.msg import Point
+from luggo.msg import Encoder
 
 class Luggo:
     def __init__(self):
@@ -23,7 +24,7 @@ class Luggo:
 
         print "Setting up ROS objects..."
         self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Point, self.move)
-        # self.encoder = rospy.Publisher("/luggo/encoders", Encoder)
+        self.encoder = rospy.Publisher("/luggo/encoders", Encoder)
         print "Init complete, let's roll homie."
 
     def move(self, data):
@@ -33,5 +34,9 @@ class Luggo:
         # print round(left)
         # print round(right)
 
-        self.robo.ForwardBackwardM1(address, int(right))
-        self.robo.ForwardBackwardM2(address, int(left))
+        # self.robo.ForwardBackwardM1(address, int(right))
+        # self.robo.ForwardBackwardM2(address, int(left))
+        enc = Encoder()
+        enc.encoder1 = 0
+        enc.encoder2 = 0
+        self.encoder.publish(enc)
