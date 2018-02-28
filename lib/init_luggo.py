@@ -23,14 +23,15 @@ class Luggo:
 
         print "Setting up ROS objects..."
         self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Point, self.move)
+        # self.encoder = rospy.Publisher("/luggo/encoders", Encoder)
         print "Init complete, let's roll homie."
 
     def move(self, data):
         address = self.address
         left = data.x + 64
         right = data.y + 64
-        print round(left)
-        print round(right)
+        # print round(left)
+        # print round(right)
 
         self.robo.ForwardBackwardM1(address, int(right))
         self.robo.ForwardBackwardM2(address, int(left))

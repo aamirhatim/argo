@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import numpy as np
 from math import cos, acos, sin, tan, pi, sqrt
 import rospy
 import time
@@ -8,21 +7,6 @@ import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
 from init_luggo import Luggo
 from geometry_msgs.msg import Point
-
-# Diff drive kinematic equations qDot = [phiDot, xDot, yDot].T
-# r = .0715       # wheel radius
-# d = .265        # distance between wheels
-# phi = .5
-#
-# config = np.array([
-#     [-r/(2*d), (r/2)*cos(phi), (r/2)*sin(phi)],
-#     [r/(2*d), (r/2)*cos(phi), (r/2)*sin(phi)]
-#     ]).T
-# print qDot
-#
-# velocity = np.array([
-#
-# ])
 
 def path():
     rospy.init_node("luggo_path")
@@ -32,7 +16,10 @@ def path():
     d = .265
     r = .0715
 
-    while not rospy.is_shutdown():
+    cmd = raw_input("Enter 's' to start:  ")
+
+    while cmd == 's' and not rospy.is_shutdown():
+        print "moving"
         time = rospy.get_time()
         # (v,w) = line(time)
         # (v,w) = eight(time)
@@ -49,24 +36,20 @@ def path():
 
 def line(t):
     Vx = (pi/2)*cos(pi*t/2)
-    #Ax = (-pi*pi/4)*sin(pi*t/2)
     return (Vx,0)
 
 def eight(t):
     speed = 14
-    # x-Position: x = 3*np.sin((4*t*np.pi)/speed)
-    vx = (12*np.pi/speed)*np.cos(4*np.pi*t/speed)
-    ax = (-48*np.pi*np.pi/(speed*speed))*np.sin(4*np.pi*t/speed)
+    # x-Position: x = 3*sin((4*t*pi)/speed)
+    vx = (12*pi/speed)*cos(4*pi*t/speed)
+    ax = (-48*pi*pi/(speed*speed))*sin(4*pi*t/speed)
 
-    # y-Position: y = 3*np.sin((2*t*np.pi)/speed)
-    vy = (6*np.pi/speed)*np.cos(2*np.pi*t/speed)
-    ay = (-12*np.pi*np.pi/(speed*speed))*np.sin(2*np.pi*t/speed)
+    # y-Position: y = 3*sin((2*t*pi)/speed)
+    vy = (6*pi/speed)*cos(2*pi*t/speed)
+    ay = (-12*pi*pi/(speed*speed))*sin(2*pi*t/speed)
 
     # Linear velocity:
-    vl = np.sqrt((vx*vx) + (vy*vy))
-
-    # reduce linear velocity by 25% so turtle stays within bounds of the sim
-    # vl = vl*(0.75)
+    vl = sqrt((vx*vx) + (vy*vy))
 
     # Angular velocity:
     w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))
@@ -74,9 +57,11 @@ def eight(t):
     return (vl,w)
 
 def circle(t):
-    # x = rCos(pi*t/T), y = rSin(pi*t/T)
-    r = .5
-    T = 2*pi/5
+    # x = rCos(t*T), y = rSin(t*T), where T = 2*pi/P
+    r = 1
+    P = 3
+    T = 2*pi/P
+
     vx = -r*T*sin(t*T)
     ax = -r*T*T*cos(t*T)
 
@@ -84,7 +69,7 @@ def circle(t):
     ay = -r*T*T*sin(t*T)
 
     # Linear velocity:
-    vl = np.sqrt((vx*vx) + (vy*vy))
+    vl = sqrt((vx*vx) + (vy*vy))
 
     # Angular velocity:
     w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))
@@ -96,7 +81,7 @@ def main():
     try:
         path()
     except rospy.ROSInterruptException:
-         pass
+        print "Shutting down\n"
 
 if __name__ == '__main__':
     main()
