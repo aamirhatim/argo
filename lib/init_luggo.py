@@ -32,5 +32,5 @@ class Luggo:
         print round(left)
         print round(right)
 
-        # self.robo.ForwardBackwardM1(address, int(right))
-        # self.robo.ForwardBackwardM2(address, int(left))
+        self.robo.ForwardBackwardM1(address, int(right))
+        self.robo.ForwardBackwardM2(address, int(left))
