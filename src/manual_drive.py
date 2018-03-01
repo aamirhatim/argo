@@ -2,120 +2,75 @@
 
 import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
-from roboclaw import Roboclaw ## import RoboClaw library for motor controls
+from init_luggo import Luggo
 import rospy
 import time
 
-class luggo_obj:
-    def __init__(self):
-        print "Connecting to motors..."
-        self.motor_status = 0
-        try:
-            self.robo = Roboclaw("/dev/ttyACM0", 115200)
-            self.robo.Open()
-            self.address = 0x80
-        except:
-            print "Failed to connect to motors! Exiting."
-            self.motor_status = 1
-            return
+def ramp_down(self, speed, prev):
+    while speed > 2:
+        speed = speed - self.delta
+        if prev == 'w':
+            self.move_forward(speed)
+        elif prev == 's':
+            self.move_backward(speed)
+        elif prev == 'd':
+			self.turn_right(speed)
+        elif prev == 'a':
+            self.turn_left(speed)
 
-        print "Motors detected!"
+        time.sleep(.05)
 
-        print "Setting up ROS objects..."
-        print "Init complete, let's roll homie."
+def ramp_up(self, speed, direction):
+    ramp_speed = 0
+    while ramp_speed < speed - self.delta:
+        ramp_speed = ramp_speed + self.delta
+        if direction == 'w':
+            self.move_forward(speed)
+        elif direction == 's':
+            self.move_backward(speed)
+        elif direction == 'd':
+			self.turn_right(speed)
+        elif direction == 'a':
+            self.turn_left(speed)
 
-        self.max_speed = 127
-        self.scaler = 3
-        self.delta = 2
-        self.keyboard_move()
+        time.sleep(.05)
 
-    def move_forward(self, speed):
-		self.robo.ForwardM1(self.address, speed)
-		self.robo.ForwardM2(self.address, speed)
+def manual_control(luggo):
+    # Scale the max speed
+    luggo.scaler = 4
+    speed = (luggo.max_speed/luggo.scaler)
 
-    def move_backward(self, speed):
-		self.robo.BackwardM1(self.address, speed)
-		self.robo.BackwardM2(self.address, speed)
+    # Calculate forward and backward speeds
+    Fspeed = luggo.max_speed + speed        # Forward speed
+    Bspeed = luggo.max_speed - speed        # Backward speed
 
-    def turn_right(self, speed):
-		self.robo.BackwardM1(self.address, speed)
-		self.robo.ForwardM2(self.address, speed)
+    direction = "x"
+    previous = "x"
+    while direction != "q":
+        previous = direction
+        direction = raw_input("Choose direction (WASD) then press enter.\nEnter 'e' to stop.\nEnter 'q' to quit:  ")
 
-    def turn_left(self, speed):
-		self.robo.ForwardM1(self.address, speed)
-		self.robo.BackwardM2(self.address, speed)
+        if direction == 'w':
+            luggo.move(Fspeed , Fspeed)
+        elif direction == 's':
+            luggo.move(Bspeed, Bspeed)
+        elif direction == 'a':
+            luggo.move(Bspeed, Fspeed)
+        elif direction =='d':
+            luggo.move(Fspeed, Bspeed)
+        elif direction == 'e':
+            luggo.move(64, 64)
+        elif direction == 'q':
+            luggo.move(64, 64)
 
-    def rest(self):
-		self.robo.ForwardM1(self.address, 0)
-		self.robo.ForwardM2(self.address, 0)
-
-    def ramp_down(self, speed, prev):
-        while speed > 2:
-            speed = speed - self.delta
-            if prev == 'w':
-                self.move_forward(speed)
-            elif prev == 's':
-                self.move_backward(speed)
-            elif prev == 'd':
-    			self.turn_right(speed)
-            elif prev == 'a':
-                self.turn_left(speed)
-
-            time.sleep(.05)
-
-    def ramp_up(self, speed, direction):
-        ramp_speed = 0
-        while ramp_speed < speed - self.delta:
-            ramp_speed = ramp_speed + self.delta
-            if direction == 'w':
-                self.move_forward(speed)
-            elif direction == 's':
-                self.move_backward(speed)
-            elif direction == 'd':
-    			self.turn_right(speed)
-            elif direction == 'a':
-                self.turn_left(speed)
-
-            time.sleep(.05)
-
-    def keyboard_move(self):
-        speed = self.max_speed/self.scaler
-        direction = "x"
-        previous = "x"
-        while direction != "q":
-            previous = direction
-            direction = raw_input("Choose direction (WASD) then press enter.\nEnter 'e' to stop.\nEnter 'q' to quit:  ")
-
-            print direction
-            if direction == 'w':
-                if previous == 's':
-                    self.ramp_down(speed, previous)
-                self.ramp_up(speed, direction)
-                self.move_forward(speed)
-            elif direction == 's':
-                if previous == 'w':
-                    self.ramp_down(speed, previous)
-                self.ramp_up(speed, direction)
-                self.move_backward(speed)
-            elif direction == 'a':
-                self.turn_left(speed)
-            elif direction =='d':
-                self.turn_right(speed)
-            elif direction == 'e':
-                if previous == 'w' or previous == 's':
-                    self.ramp_down(speed, previous)
-                self.rest()
-            elif direction == 'q':
-                self.ramp_down(speed, previous)
-                self.rest()
-
-        print "Exiting"
+    print "Exiting"
 
 def main():
-    luggo = luggo_obj()
+    luggo = Luggo()
     if luggo.motor_status == 1:
         return 0
-    rospy.init_node("luggo_controller_manual")
+    rospy.init_node("luggo_manual_control")
+    manual_control(luggo)
 
 if __name__ == "__main__":
     main()

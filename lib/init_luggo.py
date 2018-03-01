@@ -30,6 +30,8 @@ class Luggo:
         self.address = 0x80             # Roboclaw address
         self.radius = 0.0715            # Wheel radius (m)
         self.distance = 0.265           # Distance between wheels (m)
+        self.max_speed = 64             # Max speed
+        self.scaler = 1                 # Speed scaler
         print "Setup complete, let's roll homie ;)"
 
     def move(self, Rspeed, Lspeed):
@@ -65,6 +67,6 @@ class Luggo:
         # Extract encoder ticks and publish to /luggo/encoders
         enc.stamp.secs = t.secs
         enc.stamp.nsecs = t.nsecs
-        enc.encoder1 = enc1[2]
-        enc.encoder2 = enc2[2]
+        enc.encoder1 = enc1[1]
+        enc.encoder2 = enc2[1]
         self.encoder.publish(enc)
