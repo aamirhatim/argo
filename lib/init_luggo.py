@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
 from roboclaw import Roboclaw ## import RoboClaw library for motor controls
 import rospy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Vector3, Twist
 from luggo.msg import Encoder
 import time
 
@@ -15,32 +15,56 @@ class Luggo:
         try:
             self.luggo = Roboclaw("/dev/ttyACM0", 115200)
             self.luggo.Open()
-            self.address = 0x80
         except:
             print "Failed to connect to motors! Exiting."
             self.motor_status = 1
             return
 
         print "Motors detected!"
-
-        print "Setting up ROS objects..."
-        self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Point, self.move)
+        print "Setting up..."
+        # Set up publishers and subscribers
+        self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Twist, self.get_wheel_speeds)
         self.encoder = rospy.Publisher("/luggo/encoders", Encoder)
-        print "Init complete, let's roll homie."
 
-    def move(self, data):
-        address = self.address
-        left = data.x + 64
-        right = data.y + 64
-        print round(left)
-        print round(right)
+        # Set class variables
+        self.address = 0x80             # Roboclaw address
+        self.radius = 0.0715            # Wheel radius (m)
+        self.distance = 0.265           # Distance between wheels (m)
+        print "Setup complete, let's roll homie ;)"
 
-        self.luggo.ForwardBackwardM1(address, int(right))
-        self.luggo.ForwardBackwardM2(address, int(left))
-        # enc = Encoder()
-        # t = rospy.Time.now()
-        # enc.stamp.secs = t.secs
-        # enc.stamp.nsecs = t.nsecs
-        # enc.encoder1 = 1
-        # enc.encoder2 = 2
-        # self.encoder.publish(enc)
+    def move(self, Rspeed, Lspeed):
+        self.read_encoders()
+        print Rspeed
+        print Lspeed
+
+        self.luggo.ForwardBackwardM1(self.address, Rspeed)
+        self.luggo.ForwardBackwardM2(self.address, Lspeed)
+
+    def get_wheel_speeds(self, data):
+        r = self.radius
+        d = self.distance
+        v = data.linear.x
+        w = data.angular.z
+
+        # Calculate left/right wheel speeds and round to nearest integer value
+        Ul = (v-w*d)/r
+        Ur = (v+w*d)/r
+        Rspeed = int(round(Ur))
+        Lspeed = int(round(Ul))
+
+        self.move(Rspeed+64, Lspeed+64)
+
+    def read_encoders(self):
+        enc = Encoder()
+        t = rospy.Time.now()
+
+        # Get encoder values from Roboclaw
+        enc1 = self.luggo.ReadEncM1(self.address)
+        enc2 = self.luggo.ReadEncM2(self.address)
+
+        # Extract encoder ticks and publish to /luggo/encoders
+        enc.stamp.secs = t.secs
+        enc.stamp.nsecs = t.nsecs
+        enc.encoder1 = enc1[2]
+        enc.encoder2 = enc2[2]
+        self.encoder.publish(enc)

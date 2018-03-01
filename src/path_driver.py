@@ -1,38 +1,43 @@
 #!/usr/bin/env python
 
+##########################
+## FOLLOWING A SET PATH ##
+##########################
+# This code lets you test the v and w calculations for following a line, figure eight, and circle.
+# Enter a 1, 2 or 3 to begin.
+# Use Ctrl+C to stop -- The robot will continue to move after quitting so be prepared!
+# After quitting, run manual_drive.py to stop the robot
+
 from math import cos, acos, sin, tan, pi, sqrt
 import rospy
 import time
 import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
 from init_luggo import Luggo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Vector3, Twist
 
 def path():
     rospy.init_node("luggo_path")
-    pub = rospy.Publisher("/luggo/wheel_speeds", Point, queue_size = 10)
+    pub = rospy.Publisher("/luggo/wheel_speeds", Twist, queue_size = 10)
     rate = rospy.Rate(20)
-    w = 0
-    d = .265
-    r = .0715
 
-    cmd = raw_input("Enter 's' to start:  ")
+    cmd = raw_input("Enter 1 for line, 2 for figure eight, 3 for circle:  ")
+    vels = Twist()
 
-    while cmd == 's' and not rospy.is_shutdown():
-        print "moving"
+    while not rospy.is_shutdown():
         time = rospy.get_time()
-        # (v,w) = line(time)
-        (v,w) = eight(time)
-        # (v,w) = circle(time)
-        Ul = (v-w*d)/r
-        Ur = (v+w*d)/r
-        # print Ul
-        vels = Point()
-        vels.x = Ul
-        vels.y = Ur
+        if cmd == '1':
+            print "LINE"
+            (vels.linear.x, vels.angular.z) = line(time)
+        elif cmd == '2':
+            print "FIGURE EIGHT"
+            (vels.linear.x, vels.angular.z) = eight(time)
+        elif cmd == '3':
+            print "CIRCLE"
+            (vels.linear.x, vels.angular.z) = circle(time)
+
         pub.publish(vels)
         rate.sleep()
-
 
 def line(t):
     Vx = (pi/2)*cos(pi*t/2)
