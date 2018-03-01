@@ -68,10 +68,13 @@ $ cd ~/catkin_ws
 $ catkin_make
 ```
 
-## Part 4: Launch
+## Part 4: Nodes
 ### Manual Drive Mode
 To control with your keyboard, run the [`manual_drive.py`](/src/manual_drive.py) node:
 ```
 rosrun luggo manual_drive.py
 ```
-Control luggo using the WASD keys. Press 'e' to stop and 'q' to quit the node. You must press Enter for your command to register!
+Control Luggo using the WASD keys. Press 'e' to stop and 'q' to quit the node. You must press Enter for your command to register!
+
+### Path Following Mode
+Run the [`path_driver.py`](/src/path_driver.py) node to have Luggo follow a pre-programmed path: a line, a figure eight, or a circle. The robot will continue to follow its last command on quitting so you must run the stop command in `manual_drive.py` to stop it.
