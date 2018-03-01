@@ -1,46 +1,65 @@
 #!/usr/bin/env python
 
+#########################
+## INITIALIZATION NODE ##
+#########################
+# This node attempts to connect to the Roboclaw and set up all necessary publishers,
+# subscribers, and other important variables and functions.
+
 import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
-from roboclaw import Roboclaw ## import RoboClaw library for motor controls
+from roboclaw import Roboclaw                                   # Import RoboClaw library for motor controls
 import rospy
-from geometry_msgs.msg import Point, Vector3, Twist
+from geometry_msgs.msg import Vector3, Twist
 from luggo.msg import Encoder
+from math import sqrt
 import time
 
 class Luggo:
     def __init__(self):
-        print "Connecting to motors..."
+        print "Trying to connect to motors..."
         self.motor_status = 0
-        try:
-            self.luggo = Roboclaw("/dev/ttyACM0", 115200)
+        try:                                                    # First step: connect to Roboclaw controller
+            self.port = "/dev/ttyACM0"
+            self.luggo = Roboclaw(self.port, 115200)
             self.luggo.Open()
+            self.address = 0x80                                 # Roboclaw address
+            self.version = luggo.ReadVersion(self.address)      # Test connection by getting the Roboclaw version
         except:
-            print "Failed to connect to motors! Exiting."
+            print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
             return
 
+        # Follow through with setup if Roboclaw connected successfully
         print "Motors detected!"
         print "Setting up..."
+
         # Set up publishers and subscribers
         self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Twist, self.get_wheel_speeds)
-        self.encoder = rospy.Publisher("/luggo/encoders", Encoder)
+        self.encoder = rospy.Publisher("/luggo/encoders", Encoder, queue_size = 5)
 
         # Set class variables
-        self.address = 0x80             # Roboclaw address
-        self.radius = 0.0715            # Wheel radius (m)
-        self.distance = 0.265           # Distance between wheels (m)
-        self.max_speed = 64             # Max speed
-        self.scaler = 1                 # Speed scaler
-        print "Setup complete, let's roll homie ;)"
+        self.radius = 0.0715                                    # Wheel radius (m)
+        self.distance = 0.265                                   # Distance between wheels (m)
+        self.max_speed = 64                                     # Max speed
+        self.scaler = 1                                         # Speed reduction factor
+        self.rev_counts = 3200                                  # Encoder clicks per rotation
+        self.circ = .4492                                       # Wheel circumference (m)
+        self.counts_per_m = int(self.rev_counts/self.circ)      # Encoder counts per meter
+        print "Setup complete, let's roll homie ;)\n\n"
 
     def move(self, Rspeed, Lspeed):
-        self.read_encoders()
         print Rspeed
         print Lspeed
-
+        self.read_encoders()
         self.luggo.ForwardBackwardM1(self.address, Rspeed)
         self.luggo.ForwardBackwardM2(self.address, Lspeed)
+        self.read_encoders()
+
+    def get_velocity(self, vx, vy, ax, ay):
+        v = sqrt((vx*vx) + (vy*vy))                             # Linear velocity
+        w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))                     # Angular velocity
+        return (v, w)
 
     def get_wheel_speeds(self, data):
         r = self.radius
@@ -57,16 +76,23 @@ class Luggo:
         self.move(Rspeed+64, Lspeed+64)
 
     def read_encoders(self):
-        enc = Encoder()
+        mov = Encoder()
         t = rospy.Time.now()
 
         # Get encoder values from Roboclaw
-        enc1 = self.luggo.ReadEncM1(self.address)
         enc2 = self.luggo.ReadEncM2(self.address)
+        enc1 = self.luggo.ReadEncM1(self.address)
 
-        # Extract encoder ticks and publish to /luggo/encoders
-        enc.stamp.secs = t.secs
-        enc.stamp.nsecs = t.nsecs
-        enc.encoder1 = enc1[1]
-        enc.encoder2 = enc2[1]
-        self.encoder.publish(enc)
+        # Get motor speeds
+        sp1 = self.luggo.ReadSpeedM1(self.address)
+        sp2 = self.luggo.ReadSpeedM2(self.address)
+
+        # Extract encoder ticks and motor speeds, and publish to /luggo/encoders topic
+        mov.stamp.secs = t.secs
+        mov.stamp.nsecs = t.nsecs
+        mov.encoderM1 = enc1[1]
+        mov.encoderM2 = enc2[1]
+        mov.speedM1 = sp1[1]
+        mov.speedM2 = sp2[1]
+
+        self.encoder.publish(mov)

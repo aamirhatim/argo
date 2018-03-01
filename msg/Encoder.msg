@@ -1,4 +1,6 @@
 # Encoder message type for Luggo
 time stamp
-int32 encoder1
-int32 encoder2
+int32 encoderM1
+int32 encoderM2
+int32 speedM1
+int32 speedM2
