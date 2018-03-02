@@ -19,19 +19,19 @@ class Luggo:
     def __init__(self):
         print "Trying to connect to motors..."
         self.motor_status = 0
-        try:                                                    # First step: connect to Roboclaw controller
+        try:                                                        # First step: connect to Roboclaw controller
             self.port = "/dev/ttyACM0"
             self.luggo = Roboclaw(self.port, 115200)
             self.luggo.Open()
-            self.address = 0x80                                 # Roboclaw address
-            self.version = luggo.ReadVersion(self.address)      # Test connection by getting the Roboclaw version
+            self.address = 0x80                                     # Roboclaw address
+            self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
             return
 
         # Follow through with setup if Roboclaw connected successfully
-        print "Motors detected!"
+        print "Roboclaw detected! Version:", self.version[1]
         print "Setting up..."
 
         # Set up publishers and subscribers
