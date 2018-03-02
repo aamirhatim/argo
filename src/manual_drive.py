@@ -12,43 +12,78 @@ import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
 from init_luggo import Luggo
 import rospy
+from std_msgs.msg import String
+import time
+from luggo.srv import *
 
-def manual_control(luggo):
-    # Scale the max speed
-    luggo.scaler = 4
-    speed = (luggo.max_speed/luggo.scaler)
+class Manual(object):
+    def __init__(self, ref_speed):
+        self.pub = rospy.Publisher("/luggo/key_cmd", String, queue_size = 5)
+        self.luggo = Luggo()
+        if self.luggo.motor_status == 1:
+            return
+        self.luggo.Lref = ref_speed
+        self.luggo.Rref = ref_speed
 
-    # Calculate forward and backward speeds
-    Fspeed = luggo.max_speed + speed        # Forward speed
-    Bspeed = luggo.max_speed - speed        # Backward speed
+        self.LFspeed = ref_speed
+        self.LBspeed = -ref_speed
+        self.RFspeed = ref_speed
+        self.RBspeed = -ref_speed
+        self.cmd = "x"
 
-    direction = "x"
-    previous = "x"
-    while direction != "q":
-        previous = direction
-        direction = raw_input("Choose direction (WASD) then press enter.\nEnter 'e' to stop.\nEnter 'q' to quit:  ")
+    def get_cmd(self):
+        while self.cmd != "q":
+            self.cmd = get_direction_client()
+            self.send_cmd(self.cmd)
+            rospy.sleep(.05)
+        self.pub.publish("x")
 
-        if direction == 'w':
-            luggo.move(Fspeed , Fspeed)
-        elif direction == 's':
-            luggo.move(Bspeed, Bspeed)
-        elif direction == 'a':
-            luggo.move(Bspeed, Fspeed)
-        elif direction =='d':
-            luggo.move(Fspeed, Bspeed)
-        elif direction == 'e':
-            luggo.move(64, 64)
-        elif direction == 'q':
-            luggo.move(64, 64)
+    def send_cmd(self, cmd):
+        if cmd == 'w':
+            # print "forward"
+            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+        elif cmd == 's':
+            # print "backward"
+            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+        elif cmd == 'a':
+            # print "left"
+            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+        elif cmd == 'd':
+            # print "right"
+            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+        elif cmd == 'e':
+            # print "stop"
+            self.luggo.move(0, 0)
+        elif cmd == 'q':
+            # print "quit"
+            self.luggo.move(0, 0)
+        else:
+            self.luggo.move(0, 0)
+            # print "Unknown command, robot stopped."
 
-    print "Exiting"
+def get_direction_client():
+    rospy.wait_for_service("get_direction")
+    try:
+        direction = rospy.ServiceProxy("get_direction", GetDirection)
+        command = direction("request")
+        return command.response
+    except rospy.ServiceException:
+        print "Failed"
+        return
 
 def main():
-    luggo = Luggo()
-    if luggo.motor_status == 1:
-        return 0
     rospy.init_node("luggo_manual_control")
-    manual_control(luggo)
+    print "Waiting for get_direction service..."
+    rospy.wait_for_service("get_direction")
+
+    print "Starting manual drive mode..."
+    m = Manual(4000)
+
+    try:
+        m.get_cmd()
+    except rospy.ROSInterruptException:
+        print "Exiting..."
+
 
 if __name__ == "__main__":
     main()

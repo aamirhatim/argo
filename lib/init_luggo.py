@@ -24,14 +24,14 @@ class Luggo:
             self.luggo = Roboclaw(self.port, 115200)
             self.luggo.Open()
             self.address = 0x80                                     # Roboclaw address
-            self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
+            # self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
             return
 
         # Follow through with setup if Roboclaw connected successfully
-        print "Roboclaw detected! Version:", self.version[1]
+        # print "Roboclaw detected! Version:", self.version[1]
         print "Setting up..."
 
         # Set up publishers and subscribers
@@ -42,19 +42,37 @@ class Luggo:
         self.radius = 0.0715                                    # Wheel radius (m)
         self.distance = 0.265                                   # Distance between wheels (m)
         self.max_speed = 64                                     # Max speed
+        self.Lref = 0                                           # Left wheel reference speed
+        self.Rref = 0                                           # Right wheel reference speed
         self.scaler = 1                                         # Speed reduction factor
         self.rev_counts = 3200                                  # Encoder clicks per rotation
         self.circ = .4492                                       # Wheel circumference (m)
         self.counts_per_m = int(self.rev_counts/self.circ)      # Encoder counts per meter
         print "Setup complete, let's roll homie ;)\n\n"
 
-    def move(self, Rspeed, Lspeed):
+    def move(self, Lspeed, Rspeed):
         print Rspeed
         print Lspeed
-        self.read_encoders()
-        self.luggo.ForwardBackwardM1(self.address, Rspeed)
-        self.luggo.ForwardBackwardM2(self.address, Lspeed)
-        self.read_encoders()
+        Kp = .5
+        sensed = self.read_encoders()
+        # print sensed
+
+        # Controller
+        Rerror = self.Rref - sensed.speedM1
+        Lerror = self.Lref - sensed.speedM2
+        Ru = Kp*Rerror
+        Lu = Kp*Lerror
+        Rspeed = int(round(Ru + Rspeed))
+        Lspeed = int(round(Lu + Lspeed))
+
+        # self.luggo.ForwardBackwardM1(self.address, Rspeed)
+        # self.luggo.ForwardBackwardM2(self.address, Lspeed)
+        self.luggo.SpeedM1(self.address, Rspeed)
+        self.luggo.SpeedM2(self.address, Lspeed)
+        # print Lspeed
+        # print Rspeed
+
+        return (Lspeed, Rspeed)
 
     def get_velocity(self, vx, vy, ax, ay):
         v = sqrt((vx*vx) + (vy*vy))                             # Linear velocity
@@ -96,3 +114,4 @@ class Luggo:
         mov.speedM2 = sp2[1]
 
         self.encoder.publish(mov)
+        return mov
