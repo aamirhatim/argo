@@ -11,15 +11,15 @@
     <param name="io_method" value="mmap"/>
   </node> -->
 
-	<include file="$(find raspicam_node)/launch/camera_module_v2_640x480_15fps.launch"/>
+	<include file="$(find raspicam_node)/launch/camera_module_v2_640x480_30fps.launch"/>
   <node name="start_capture" pkg="luggo" type="start_capture.py"/>
 
 	<include file="$(find ar_track_alvar)/launch/pr2_indiv_no_kinect.launch">
 		<arg name="marker_size" value="12.0" />
 		<arg name="max_new_marker_error" value="0.08" />
 		<arg name="max_track_error" value="0.2" />
-		<arg name="cam_image_topic" value="/usb_cam/image_raw" />
-		<arg name="cam_info_topic" value="/usb_cam/camera_info" />
+		<arg name="cam_image_topic" value="/raspicam_node/image_raw" />
+		<arg name="cam_info_topic" value="/raspicam_node/camera_info" />
 		<arg name="output_frame" value="raspicam" />
 	</include>
 
