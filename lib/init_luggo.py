@@ -12,7 +12,7 @@ from roboclaw import Roboclaw                                   # Import RoboCla
 import rospy
 from geometry_msgs.msg import Vector3, Twist
 from luggo.msg import Encoder
-from math import sqrt
+from math import sqrt, pi
 import time
 
 class Luggo:
@@ -24,7 +24,7 @@ class Luggo:
             self.luggo = Roboclaw(self.port, 115200)
             self.luggo.Open()
             self.address = 0x80                                     # Roboclaw address
-            # self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
+            self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
@@ -39,43 +39,76 @@ class Luggo:
         self.encoder = rospy.Publisher("/luggo/encoders", Encoder, queue_size = 5)
 
         # Set class variables
-        self.radius = 0.0715                                    # Wheel radius (m)
+        self.radius = 0.0728                                    # Wheel radius (m)
         self.distance = 0.265                                   # Distance between wheels (m)
-        self.max_speed = 64                                     # Max speed
-        self.Lref = 0                                           # Left wheel reference speed
-        self.Rref = 0                                           # Right wheel reference speed
+        self.max_speed = 13000                                  # Max speed (in QPPS)
         self.scaler = 1                                         # Speed reduction factor
         self.rev_counts = 3200                                  # Encoder clicks per rotation
-        self.circ = .4492                                       # Wheel circumference (m)
+        self.circ = .4574                                       # Wheel circumference (m)
         self.counts_per_m = int(self.rev_counts/self.circ)      # Encoder counts per meter
+        self.conv = self.rev_counts/(2*pi)                      # Wheel speed conversion factor
+        self.Lref = 0                                           # Left wheel reference speed
+        self.Rref = 0                                           # Right wheel reference speed
+        self.Lprevious = 0                                      # Previous time step value for left wheel
+        self.Rprevious = 0                                      # Previous time step value for right wheel
+        self.Kp = .07                                           # Proportional gain
+        self.Kd = .19                                           # Derivative gain
         print "Setup complete, let's roll homie ;)\n\n"
 
-    def move(self, Lspeed, Rspeed):
+    def pd_control(self, Lspeed, Rspeed):
+        feedback = self.read_encoders()
+        M1 = feedback.speedM1
+        M2 = feedback.speedM2
+
         print Rspeed
+        print M1
         print Lspeed
-        Kp = .5
-        sensed = self.read_encoders()
-        # print sensed
+        print M2
 
-        # Controller
-        Rerror = self.Rref - sensed.speedM1
-        Lerror = self.Lref - sensed.speedM2
-        Ru = Kp*Rerror
-        Lu = Kp*Lerror
-        Rspeed = int(round(Ru + Rspeed))
-        Lspeed = int(round(Lu + Lspeed))
+        Rerror = self.Rref - M1
+        Lerror = self.Lref - M2
 
-        # self.luggo.ForwardBackwardM1(self.address, Rspeed)
-        # self.luggo.ForwardBackwardM2(self.address, Lspeed)
+        Rdot = M1 - self.Rprevious
+        Ldot = M2 - self.Lprevious
+
+        Ru = self.Kp*Rerror + self.Kd*Rdot
+        Lu = self.Kp*Lerror + self.Kd*Ldot
+
+        self.Rprevious = M1
+        self.Lprevious = M2
+
+        newRspeed = int(round(Ru + Rspeed))
+        newLspeed = int(round(Lu + Lspeed))
+
+        if newRspeed > self.max_speed:
+            newRspeed == self.max_speed
+        elif newRspeed < -self.max_speed:
+            newRspeed = -self.max_speed
+        if newLspeed > self.max_speed:
+            newLspeed = self.max_speed
+        elif newLspeed < -self.max_speed:
+            newLspeed = -self.max_speed
+
+        return (int(newLspeed), int(newRspeed))
+
+    def move(self, Lspeed, Rspeed):
+        if Lspeed == 0 and Rspeed == 0:
+            self.luggo.SpeedM1(self.address, 0)
+            self.luggo.SpeedM2(self.address, 0)
+            self.previous = 0
+            return
+
+        (Lspeed, Rspeed) = self.pd_control(Lspeed, Rspeed)
         self.luggo.SpeedM1(self.address, Rspeed)
         self.luggo.SpeedM2(self.address, Lspeed)
-        # print Lspeed
-        # print Rspeed
 
         return (Lspeed, Rspeed)
 
     def get_velocity(self, vx, vy, ax, ay):
         v = sqrt((vx*vx) + (vy*vy))                             # Linear velocity
+        # if vx < 0:
+        #     v = -v
+
         w = (vy*ax-vx*ay)/((vx*vx)+(vy*vy))                     # Angular velocity
         return (v, w)
 
@@ -88,10 +121,17 @@ class Luggo:
         # Calculate left/right wheel speeds and round to nearest integer value
         Ul = (v-w*d)/r
         Ur = (v+w*d)/r
-        Rspeed = int(round(Ur))
-        Lspeed = int(round(Ul))
 
-        self.move(Rspeed+64, Lspeed+64)
+        # Convert to QPPS
+        Rspeed = int(round(Ur*self.conv))
+        Lspeed = int(round(Ul*self.conv))
+
+        if Rspeed > 0:
+            Rspeed = Rspeed + 80
+        elif Rspeed < 0:
+            Rspeed = Rspeed - 20
+
+        self.move(Lspeed, Rspeed)
 
     def read_encoders(self):
         mov = Encoder()

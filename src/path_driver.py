@@ -42,7 +42,8 @@ def path(luggo):
         rate.sleep()
 
 def line(t, luggo):
-    vx = (pi/2)*cos(pi*t/2)
+    # x = sin(pi*t/3)
+    vx = (pi/4)*cos(pi*t/4)
     return luggo.get_velocity(vx, 0, 0, 0)
 
 def eight(t, luggo):
