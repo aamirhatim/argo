@@ -1,19 +1,17 @@
 <launch>
-  <!-- <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
+  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
     <param name="video_device" value="/dev/video0" />
     <param name="image_width" value="640" />
     <param name="image_height" value="480" />
     <param name="pixel_format" value="yuyv" />
     <param name="camera_frame_id" value="usb_cam" />
     <param name="io_method" value="mmap"/>
-  </node> -->
+  </node>
 
   <include file="$(find raspicam_node)/launch/camera_module_v2_640x480_30fps.launch"/>
   <node name="start_capture" pkg="luggo" type="start_capture.py"/>
 
-  <node name="img_proc" pkg="luggo" type="img_proc.py" respawn="true" output="screen">
-  </node>
-
-  <!-- <node name="servo_cmd" pkg="obj_tracker" type="servoCtl.py" respawn="true">
-  </node> -->
+  <node pkg="luggo" type="tf_broadcast.py" name="luggo_tf" />
+  <!-- <node name="img_proc" pkg="luggo" type="img_proc.py" respawn="true" output="screen"/> -->
+  <!-- <node name="servo_cmd" pkg="obj_tracker" type="servoCtl.py" respawn="true"/> -->
 </launch>

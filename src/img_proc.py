@@ -21,18 +21,19 @@ def nothing(x):
 
 class Tracker:
     def __init__(self):
-        self.luggo = Luggo()
-        if self.luggo.motor_status == 1:
-            return
-        self.ref = 3000
-        self.LFspeed = int(self.ref)
-        self.LBspeed = int(self.ref*(-1))
-        self.RFspeed = int(self.ref)
-        self.RBspeed = int(self.ref*(-1))
+        # self.luggo = Luggo()
+        # if self.luggo.motor_status == 1:
+        #     return
+        # self.ref = 3000
+        # self.LFspeed = int(self.ref)
+        # self.LBspeed = int(self.ref*(-1))
+        # self.RFspeed = int(self.ref)
+        # self.RBspeed = int(self.ref*(-1))
 
         print "Setting up object detector..."
         self.bridge = CvBridge()
-        self.img_input = rospy.Subscriber("/raspicam_node/image_raw", Image, self.find_obj)
+        # self.img_input = rospy.Subscriber("/raspicam_node/image_raw", Image, self.find_obj)
+        self.img_input = rospy.Subscriber("/usb_cam/image_raw", Image, self.find_obj)
         # self.obj_loc = rospy.Publisher("/luggo/obj_location", Point, queue_size = 5)
         self.prev = 30
 
@@ -86,23 +87,23 @@ class Tracker:
             if radius > 20:
                 if radius < 30:
                     print "forward"
-                    self.luggo.Lref = self.ref
-                    self.luggo.Rref = self.ref
-                    (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+                    # self.luggo.Lref = self.ref
+                    # self.luggo.Rref = self.ref
+                    # (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
                 elif radius > 50:
                     print "backwards"
-                    self.luggo.Lref = int(self.ref*(-1))
-                    self.luggo.Rref = int(self.ref*(-1))
-                    (self.LBspeed, self.RBspeed) = self.luggo.move(self.LBspeed, self.RBspeed)
+                    # self.luggo.Lref = int(self.ref*(-1))
+                    # self.luggo.Rref = int(self.ref*(-1))
+                    # (self.LBspeed, self.RBspeed) = self.luggo.move(self.LBspeed, self.RBspeed)
                 else:
                     print "stop"
-                    self.luggo.move(0, 0)
-                    self.luggo.Lprevious = 0
-                    self.luggo.Rprevious = 0
-                    self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
-                    self.LBspeed = int(self.ref*(-1))
-                    self.RFspeed = int(self.ref)
-                    self.RBspeed = int(self.ref*(-1))
+                    # self.luggo.move(0, 0)
+                    # self.luggo.Lprevious = 0
+                    # self.luggo.Rprevious = 0
+                    # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
+                    # self.LBspeed = int(self.ref*(-1))
+                    # self.RFspeed = int(self.ref)
+                    # self.RBspeed = int(self.ref*(-1))
 
                 r = int(radius)
                 center = (int(x), int(y))
@@ -113,7 +114,15 @@ class Tracker:
                 print delta,"\n"
 
                 self.prev = radius
-
+            else:
+                print "stop"
+                # self.luggo.move(0, 0)
+                # self.luggo.Lprevious = 0
+                # self.luggo.Rprevious = 0
+                # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
+                # self.LBspeed = int(self.ref*(-1))
+                # self.RFspeed = int(self.ref)
+                # self.RBspeed = int(self.ref*(-1))
 
         # print raw_hsv[319][239]
         cv2.imshow("Camera", final)                                   # Show image
