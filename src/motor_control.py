@@ -15,6 +15,12 @@ class AR_control:
         if self.luggo.motor_status == 1:
             return
 
+        self.ref = 4000
+        self.LFspeed = int(self.ref)
+        self.LBspeed = int(self.ref*(-1))
+        self.RFspeed = int(self.ref)
+        self.RBspeed = int(self.ref*(-1))
+
         self.ar_sub = rospy.Subscriber("/visualization_marker", Marker, self.get_pos)
         self.previous = PointStamped()
 
@@ -26,10 +32,23 @@ class AR_control:
 
         if location.point.z < 0.5:
             print "reverse"
+            self.luggo.Lref = int(self.ref*(-1))
+            self.luggo.Rref = int(self.ref*(-1))
+            (self.LBspeed, self.RBspeed) = self.luggo.move(self.LBspeed, self.RBspeed)
         elif location.point.z < 0.7:
             print "stop"
+            self.luggo.move(0, 0)
+            self.luggo.Lprevious = 0
+            self.luggo.Rprevious = 0
+            self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
+            self.LBspeed = int(self.ref*(-1))
+            self.RFspeed = int(self.ref)
+            self.RBspeed = int(self.ref*(-1))
         else:
             print "forward"
+            self.luggo.Lref = self.ref
+            self.luggo.Rref = self.ref
+            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
 
 
 
