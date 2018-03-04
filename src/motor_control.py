@@ -15,11 +15,13 @@ class AR_control:
         if self.luggo.motor_status == 1:
             return
 
-        self.ref = 4000
+        self.ref = 3000
         self.LFspeed = int(self.ref)
         self.LBspeed = int(self.ref*(-1))
         self.RFspeed = int(self.ref)
         self.RBspeed = int(self.ref*(-1))
+        self.forward_limit = 0.8
+        self.back_limit = 0.7
 
         self.ar_sub = rospy.Subscriber("/visualization_marker", Marker, self.get_pos)
         self.previous = PointStamped()
@@ -28,91 +30,79 @@ class AR_control:
         location = PointStamped()
         location.header = data.header
         location.point = data.pose.position
-        print location.point
+        # print location.point
 
-        if location.point.z < 0.5:
+        # Calculate differences from previous point
+        dX = location.point.x - self.previous.point.x
+        dZ = location.point.z - self.previous.point.z
+        dT = location.header.stamp.to_sec() - self.previous.header.stamp.to_sec()
+
+        # Forward/backward speed calculation
+        speed = 0
+        if location.point.z < self.back_limit:
+            dLimit = (self.back_limit - location.point.z)/self.back_limit
+            speed = int(self.ref * dLimit)
+            # print speed
+        elif location.point.z >= self.forward_limit:
+            dLimit = (location.point.z - self.forward_limit)/self.forward_limit
+            if self.ref * dLimit >= self.ref:
+                speed = self.ref
+            else:
+                speed = int(self.ref * dLimit)
+
+        # Left/right calculation
+        tVel = abs(int(location.point.x * speed))
+        if tVel >= (0.4*speed):
+            tVel= int(0.4*speed)
+
+        if location.point.z < self.back_limit:
             print "reverse"
-            self.luggo.Lref = int(self.ref*(-1))
-            self.luggo.Rref = int(self.ref*(-1))
-            (self.LBspeed, self.RBspeed) = self.luggo.move(self.LBspeed, self.RBspeed)
-        elif location.point.z < 0.7:
+            if location.point.x < -0.05: # Turning right
+                print "R right"
+                Lspeed = int(speed + tVel)
+                Rspeed = int(speed)
+            elif location.point.x > 0.05: # Turning left
+                print "R left"
+                Lspeed = int(speed)
+                Rspeed = int(speed + tVel)
+            else:
+                print "R S"
+                Lspeed = speed
+                Rspeed = speed
+
+            self.luggo.Lref = int(Lspeed*(-1))
+            self.luggo.Rref = int(Rspeed*(-1))
+            # (self.LBspeed, self.RBspeed) =
+            self.luggo.move(self.luggo.Lref, self.luggo.Rref)
+        elif location.point.z <= self.forward_limit:
             print "stop"
             self.luggo.move(0, 0)
             self.luggo.Lprevious = 0
             self.luggo.Rprevious = 0
-            self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
-            self.LBspeed = int(self.ref*(-1))
-            self.RFspeed = int(self.ref)
-            self.RBspeed = int(self.ref*(-1))
+            # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
+            # self.LBspeed = int(self.ref*(-1))
+            # self.RFspeed = int(self.ref)
+            # self.RBspeed = int(self.ref*(-1))
         else:
             print "forward"
-            self.luggo.Lref = self.ref
-            self.luggo.Rref = self.ref
-            (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+            if location.point.x < -0.1: # Turning left
+                print "F left"
+                Lspeed = int(speed)
+                Rspeed = int(speed + tVel)
+            elif location.point.x > 0.1: # Turning right
+                print "F right"
+                Lspeed = int(speed + tVel)
+                Rspeed = int(speed)
+            else:
+                print "F S"
+                Lspeed = speed
+                Rspeed = speed
+            self.luggo.Lref = int(Lspeed)
+            self.luggo.Rref = int(Rspeed)
+            # (self.LFspeed, self.RFspeed) =
+            self.luggo.move(self.luggo.Lref, self.luggo.Rref)
 
-
-
-# class luggo_obj:
-#     def __init__(self):
-#         print "Connecting to motors..."
-#         self.motor_status = 0
-#         try:
-#             self.robo = Roboclaw("/dev/ttyACM0", 115200)
-#             self.robo.Open()
-#             self.address = 0x80
-#         except:
-#             print "Failed to connect to motors! Exiting."
-#             self.motor_status = 1
-#             return
-#
-#         print "Motors detected!"
-#
-#         print "Setting up ROS object..."
-#         self.sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.get_dist)
-#         # self.pub = rospy.Publisher("/luggo/encoder_count", Encoder)
-#         print "Init complete, let's roll homie."
-#
-#     def get_dist(self, data):
-#         temp = data.markers
-#         if len(temp) == 1:
-#             tag = temp[0]
-#             z = tag.pose.pose.position.z
-#         else:
-#             z = 0
-#
-#         dist = int(z/(10**300))
-#         print dist
-#         self.move_luggo(dist)
-#
-#     def read_encoder(self):
-#         enc1 = self.robo.ReadEncM1(self.address)
-#         enc2 = self.robo.ReadEncM2(self.address)
-#
-#         print enc1
-#         print enc2
-#
-#     def move_luggo(self, distance):
-#         max_speed = 127
-#         freeze = 0
-#
-#         read_enc()
-#
-#         if distance == 0:
-#             print "Freeze"
-#             self.robo.ForwardM1(self.address, freeze)
-#             self.robo.ForwardM2(self.address, freeze)
-#         if distance > 45:
-#             print "Onward march!"
-#             self.robo.ForwardM1(self.address, max_speed/4)
-#             self.robo.ForwardM2(self.address, max_speed/4)
-#         elif distance < 43 and distance > 0:
-#             print "Retreat!"
-#             self.robo.BackwardM1(self.address, max_speed/4)
-#             self.robo.BackwardM2(self.address, max_speed/4)
-#         elif distance >= 43 and distance <= 45:
-#             print "Hold laddy!"
-#             self.robo.ForwardM1(self.address, freeze)
-#             self.robo.ForwardM2(self.address, freeze)
+        self.previous = location
 
 def main():
     ar_tracker = AR_control()
@@ -122,7 +112,6 @@ def main():
         rospy.spin()
     except KeyboardInterrupt:
         print("Shutting down")
-
 
 if __name__ == "__main__":
     main()

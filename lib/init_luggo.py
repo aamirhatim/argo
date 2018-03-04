@@ -61,9 +61,9 @@ class Luggo:
         M2 = feedback.speedM2
 
         print Rspeed
-        print M1
-        print Lspeed
-        print M2
+        # print M1
+        print Lspeed, "\n"
+        # print M2
 
         Rerror = self.Rref - M1
         Lerror = self.Lref - M2
