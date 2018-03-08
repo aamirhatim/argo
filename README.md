@@ -1,4 +1,4 @@
-## Luggo - An Autonomous Suitcase that Follows You
+## Argo - An Autonomous Suitcase that Follows You
 #### Northwestern MSR Winter Project 2018
 #### Aamir Husain
 
@@ -56,11 +56,11 @@ $ source devel/setup.bash
 ```
 You'll need to source your .bash file every time you open a new shell. Save some time by making an alias for this command in your .bash_aliases file.
 
-## Part 3: Download the `rospicam_node` and `luggo` packages.
+## Part 3: Download the `rospicam_node` and `argo` packages.
 1. In your `src` directory of `/catkin_ws`, run the commands:
 ```
 $ git clone https://github.com/dganbold/raspicam_node.git
-$ git clone https://github.com/aamirhatim/luggo.git
+$ git clone https://github.com/aamirhatim/argo.git
 ```
 2. Run `catkin_make` in your workspace:
 ```
@@ -72,12 +72,19 @@ $ catkin_make
 ### Manual Drive Mode
 To control with your keyboard, run the [`manual_drive.py`](/src/manual_drive.py) node:
 ```
-rosrun luggo manual_drive.py
+$ rosrun argo manual_drive.py
 ```
-Control Luggo using the WASD keys. Press 'e' to stop and 'q' to quit the node. You must press Enter for your command to register!
+Control Argo using the WASD keys. Press 'e' to stop and 'q' to quit the node. You must press Enter for your command to register!
 
 ### Path Following Mode
-Run the [`path_driver.py`](/src/path_driver.py) node to have Luggo follow a pre-programmed path: a line, a figure eight, or a circle. The robot will continue to follow its last command on quitting so you must run the stop command in `manual_drive.py` to stop it.
+Run the [`path_driver.py`](/src/path_driver.py) node to have Argo follow a pre-programmed path: a line, a figure eight, or a circle. The robot will continue to follow its last command on quitting so you must run the stop command in `manual_drive.py` to stop it.
 ```
-rosrun luggo path_driver.py
+$ rosrun argo path_driver.py
+```
+
+### Autonomous Tracking Mode
+In this mode, Argo will search for an AR tag and begin following it. Run the following commands in two separate terminals:
+```
+$ roslaunch argo find_tag.launch
+$ rosrun argo motor_control.py
 ```
