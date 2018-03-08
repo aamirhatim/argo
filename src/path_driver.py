@@ -14,13 +14,13 @@ from math import cos, acos, sin, tan, pi, sqrt
 import rospy
 import time
 import sys
-sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
-from init_luggo import Luggo
+sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
+from init_argo import Argo
 from geometry_msgs.msg import Vector3, Twist
 
-def path(luggo):
-    rospy.init_node("luggo_path")
-    pub = rospy.Publisher("/luggo/wheel_speeds", Twist, queue_size = 10)
+def path(argo):
+    rospy.init_node("argo_path")
+    pub = rospy.Publisher("/argo/wheel_speeds", Twist, queue_size = 10)
     rate = rospy.Rate(20)
 
     cmd = raw_input("Enter 1 for line, 2 for figure eight, 3 for circle:  ")
@@ -30,23 +30,23 @@ def path(luggo):
         time = rospy.get_time()
         if cmd == '1':
             print "LINE"
-            (vels.linear.x, vels.angular.z) = line(time, luggo)
+            (vels.linear.x, vels.angular.z) = line(time, argo)
         elif cmd == '2':
             print "FIGURE EIGHT"
-            (vels.linear.x, vels.angular.z) = eight(time, luggo)
+            (vels.linear.x, vels.angular.z) = eight(time, argo)
         elif cmd == '3':
             print "CIRCLE"
-            (vels.linear.x, vels.angular.z) = circle(time, luggo)
+            (vels.linear.x, vels.angular.z) = circle(time, argo)
 
         pub.publish(vels)
         rate.sleep()
 
-def line(t, luggo):
+def line(t, argo):
     # x = sin(pi*t/3)
     vx = (pi/4)*cos(pi*t/4)
-    return luggo.get_velocity(vx, 0, 0, 0)
+    return argo.get_velocity(vx, 0, 0, 0)
 
-def eight(t, luggo):
+def eight(t, argo):
     speed = 5
     T = 2*pi/speed
     # x-Position: x = sin(2*t*T)
@@ -57,9 +57,9 @@ def eight(t, luggo):
     vy = T*cos(t*T)
     ay = (-T*T)*sin(t*T)
 
-    return luggo.get_velocity(vx, vy, ax, ay)
+    return argo.get_velocity(vx, vy, ax, ay)
 
-def circle(t, luggo):
+def circle(t, argo):
     # x = rCos(t*T), y = rSin(t*T), where T = 2*pi/P
     r = 1
     P = 3
@@ -71,14 +71,14 @@ def circle(t, luggo):
     vy = r*T*cos(t*T)
     ay = -r*T*T*sin(t*T)
 
-    return luggo.get_velocity(vx, vy, ax, ay)
+    return argo.get_velocity(vx, vy, ax, ay)
 
 def main():
-    luggo = Luggo()
-    if luggo.motor_status == 1:
+    argo = Argo()
+    if argo.motor_status == 1:
         return 0
     try:
-        path(luggo)
+        path(argo)
     except rospy.ROSInterruptException:
         print "Shutting down\n"
 

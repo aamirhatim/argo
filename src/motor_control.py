@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
-from init_luggo import Luggo
+sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
+from init_argo import Argo
 import rospy
 from ar_track_alvar_msgs.msg import * ## import AR tag custom messages
 from visualization_msgs.msg import Marker
@@ -11,8 +11,8 @@ from geometry_msgs.msg import PointStamped
 class AR_control:
     def __init__(self):
         print "Setting up AR tracking..."
-        self.luggo = Luggo()
-        if self.luggo.motor_status == 1:
+        self.argo = Argo()
+        if self.argo.motor_status == 1:
             return
 
         self.ref = 3000
@@ -70,15 +70,15 @@ class AR_control:
                 Lspeed = speed
                 Rspeed = speed
 
-            self.luggo.Lref = int(Lspeed*(-1))
-            self.luggo.Rref = int(Rspeed*(-1))
+            self.argo.Lref = int(Lspeed*(-1))
+            self.argo.Rref = int(Rspeed*(-1))
             # (self.LBspeed, self.RBspeed) =
-            self.luggo.move(self.luggo.Lref, self.luggo.Rref)
+            self.argo.move(self.argo.Lref, self.argo.Rref)
         elif location.point.z <= self.forward_limit:
             print "stop"
-            self.luggo.move(0, 0)
-            self.luggo.Lprevious = 0
-            self.luggo.Rprevious = 0
+            self.argo.move(0, 0)
+            self.argo.Lprevious = 0
+            self.argo.Rprevious = 0
             # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
             # self.LBspeed = int(self.ref*(-1))
             # self.RFspeed = int(self.ref)
@@ -97,16 +97,16 @@ class AR_control:
                 print "F S"
                 Lspeed = speed
                 Rspeed = speed
-            self.luggo.Lref = int(Lspeed)
-            self.luggo.Rref = int(Rspeed)
+            self.argo.Lref = int(Lspeed)
+            self.argo.Rref = int(Rspeed)
             # (self.LFspeed, self.RFspeed) =
-            self.luggo.move(self.luggo.Lref, self.luggo.Rref)
+            self.argo.move(self.argo.Lref, self.argo.Rref)
 
         self.previous = location
 
 def main():
     ar_tracker = AR_control()
-    rospy.init_node("luggo_ar_tracker")
+    rospy.init_node("argo_ar_tracker")
 
     try:
         rospy.spin()

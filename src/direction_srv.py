@@ -3,17 +3,17 @@
 ###########################
 ## GET DIRECTION SERVICE ##
 ###########################
-# This service is subscribed to the /luggo/key_cmd topic which publishes keystrokes.
+# This service is subscribed to the /argo/key_cmd topic which publishes keystrokes.
 # When called, this service returns the most recent key command.
 
 import rospy
 from std_msgs.msg import String
-from luggo.srv import *
+from argo.srv import *
 
 class Direction:
     def __init__(self):
         self.direction = "x"
-        rospy.Subscriber("/luggo/key_cmd", String, self.save_cmd)
+        rospy.Subscriber("/argo/key_cmd", String, self.save_cmd)
         self.s = rospy.Service("get_direction", GetDirection, self.get_cmd)
         print "Direction Server Ready"
         rospy.spin()

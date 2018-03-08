@@ -1,7 +1,7 @@
 <launch>
 
-  <node name="get_direction_srv" pkg="luggo" type="direction_srv.py" output="screen"/>
-  <node name="keyboard_cmd" pkg="luggo" type="keypress.py" output="screen"/>
-  <node name="luggo_manual_control" pkg="luggo" type="manual_drive.py"/>
+  <node name="get_direction_srv" pkg="argo" type="direction_srv.py" output="screen"/>
+  <node name="keyboard_cmd" pkg="argo" type="keypress.py" output="screen"/>
+  <node name="argo_manual_control" pkg="argo" type="manual_drive.py"/>
 
 </launch>

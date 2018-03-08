@@ -12,7 +12,7 @@
   </node> -->
 
 	<include file="$(find raspicam_node)/launch/camera_module_v2_640x480_30fps.launch"/>
-  <node name="start_capture" pkg="luggo" type="start_capture.py"/>
+  <node name="start_capture" pkg="argo" type="start_capture.py"/>
 
 	<include file="$(find ar_track_alvar)/launch/pr2_indiv_no_kinect.launch">
 		<arg name="marker_size" value="12.0" />

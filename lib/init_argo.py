@@ -7,24 +7,24 @@
 # subscribers, and other important variables and functions.
 
 import sys
-sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
+sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
 from roboclaw import Roboclaw                                   # Import RoboClaw library for motor controls
 import rospy
 from geometry_msgs.msg import Vector3, Twist
-from luggo.msg import Encoder
+from argo.msg import Encoder
 from math import sqrt, pi
 import time
 
-class Luggo:
+class Argo:
     def __init__(self):
         print "Trying to connect to motors..."
         self.motor_status = 0
         try:                                                        # First step: connect to Roboclaw controller
             self.port = "/dev/ttyACM0"
-            self.luggo = Roboclaw(self.port, 115200)
-            self.luggo.Open()
+            self.argo = Roboclaw(self.port, 115200)
+            self.argo.Open()
             self.address = 0x80                                     # Roboclaw address
-            self.version = self.luggo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
+            self.version = self.argo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
@@ -35,8 +35,8 @@ class Luggo:
         print "Setting up..."
 
         # Set up publishers and subscribers
-        self.cmd_sub = rospy.Subscriber("/luggo/wheel_speeds", Twist, self.get_wheel_speeds)
-        self.encoder = rospy.Publisher("/luggo/encoders", Encoder, queue_size = 5)
+        self.cmd_sub = rospy.Subscriber("/argo/wheel_speeds", Twist, self.get_wheel_speeds)
+        self.encoder = rospy.Publisher("/argo/encoders", Encoder, queue_size = 5)
 
         # Set class variables
         self.radius = 0.0728                                    # Wheel radius (m)
@@ -93,14 +93,14 @@ class Luggo:
 
     def move(self, Lspeed, Rspeed):
         if Lspeed == 0 and Rspeed == 0:
-            self.luggo.SpeedM1(self.address, 0)
-            self.luggo.SpeedM2(self.address, 0)
+            self.argo.SpeedM1(self.address, 0)
+            self.argo.SpeedM2(self.address, 0)
             self.previous = 0
             return
 
         (Lspeed, Rspeed) = self.pd_control(Lspeed, Rspeed)
-        self.luggo.SpeedM1(self.address, Rspeed)
-        self.luggo.SpeedM2(self.address, Lspeed)
+        self.argo.SpeedM1(self.address, Rspeed)
+        self.argo.SpeedM2(self.address, Lspeed)
 
         return (Lspeed, Rspeed)
 
@@ -138,14 +138,14 @@ class Luggo:
         t = rospy.Time.now()
 
         # Get encoder values from Roboclaw
-        enc2 = self.luggo.ReadEncM2(self.address)
-        enc1 = self.luggo.ReadEncM1(self.address)
+        enc2 = self.argo.ReadEncM2(self.address)
+        enc1 = self.argo.ReadEncM1(self.address)
 
         # Get motor speeds
-        sp1 = self.luggo.ReadSpeedM1(self.address)
-        sp2 = self.luggo.ReadSpeedM2(self.address)
+        sp1 = self.argo.ReadSpeedM1(self.address)
+        sp2 = self.argo.ReadSpeedM2(self.address)
 
-        # Extract encoder ticks and motor speeds, and publish to /luggo/encoders topic
+        # Extract encoder ticks and motor speeds, and publish to /argo/encoders topic
         mov.stamp.secs = t.secs
         mov.stamp.nsecs = t.nsecs
         mov.encoderM1 = enc1[1]

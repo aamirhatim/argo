@@ -3,7 +3,7 @@
 ######################
 ## KEYSTROKE PICKUP ##
 ######################
-# This code publishes keyboard commands to the /luggo/key_controls topic every
+# This code publishes keyboard commands to the /argo/key_controls topic every
 # time a direction is entered
 
 import rospy
@@ -12,7 +12,7 @@ from std_msgs.msg import String
 
 def main():
     rospy.init_node("keyboard_cmd")
-    pub = rospy.Publisher("/luggo/key_cmd", String, queue_size = 10)
+    pub = rospy.Publisher("/argo/key_cmd", String, queue_size = 10)
     direction = "x"
 
     try:

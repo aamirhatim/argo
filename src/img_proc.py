@@ -6,8 +6,8 @@
 # This node uses OpenCV to find the object to track.
 
 import sys
-sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/luggo/lib")
-from init_luggo import Luggo
+sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
+from init_argo import Argo
 import rospy
 import cv2
 import time
@@ -21,8 +21,8 @@ def nothing(x):
 
 class Tracker:
     def __init__(self):
-        # self.luggo = Luggo()
-        # if self.luggo.motor_status == 1:
+        # self.argo = Argo()
+        # if self.argo.motor_status == 1:
         #     return
         # self.ref = 3000
         # self.LFspeed = int(self.ref)
@@ -34,7 +34,7 @@ class Tracker:
         self.bridge = CvBridge()
         # self.img_input = rospy.Subscriber("/raspicam_node/image_raw", Image, self.find_obj)
         self.img_input = rospy.Subscriber("/usb_cam/image_raw", Image, self.find_obj)
-        # self.obj_loc = rospy.Publisher("/luggo/obj_location", Point, queue_size = 5)
+        # self.obj_loc = rospy.Publisher("/argo/obj_location", Point, queue_size = 5)
         self.prev = 30
 
         print "Setup complete. Ready or not, here I come ;)"
@@ -87,19 +87,19 @@ class Tracker:
             if radius > 20:
                 if radius < 30:
                     print "forward"
-                    # self.luggo.Lref = self.ref
-                    # self.luggo.Rref = self.ref
-                    # (self.LFspeed, self.RFspeed) = self.luggo.move(self.LFspeed, self.RFspeed)
+                    # self.argo.Lref = self.ref
+                    # self.argo.Rref = self.ref
+                    # (self.LFspeed, self.RFspeed) = self.argo.move(self.LFspeed, self.RFspeed)
                 elif radius > 50:
                     print "backwards"
-                    # self.luggo.Lref = int(self.ref*(-1))
-                    # self.luggo.Rref = int(self.ref*(-1))
-                    # (self.LBspeed, self.RBspeed) = self.luggo.move(self.LBspeed, self.RBspeed)
+                    # self.argo.Lref = int(self.ref*(-1))
+                    # self.argo.Rref = int(self.ref*(-1))
+                    # (self.LBspeed, self.RBspeed) = self.argo.move(self.LBspeed, self.RBspeed)
                 else:
                     print "stop"
-                    # self.luggo.move(0, 0)
-                    # self.luggo.Lprevious = 0
-                    # self.luggo.Rprevious = 0
+                    # self.argo.move(0, 0)
+                    # self.argo.Lprevious = 0
+                    # self.argo.Rprevious = 0
                     # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
                     # self.LBspeed = int(self.ref*(-1))
                     # self.RFspeed = int(self.ref)
@@ -116,9 +116,9 @@ class Tracker:
                 self.prev = radius
             else:
                 print "stop"
-                # self.luggo.move(0, 0)
-                # self.luggo.Lprevious = 0
-                # self.luggo.Rprevious = 0
+                # self.argo.move(0, 0)
+                # self.argo.Lprevious = 0
+                # self.argo.Rprevious = 0
                 # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
                 # self.LBspeed = int(self.ref*(-1))
                 # self.RFspeed = int(self.ref)

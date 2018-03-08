@@ -1,4 +1,4 @@
-# Encoder message type for Luggo
+# Encoder message type for Argo
 time stamp
 int32 encoderM1
 int32 encoderM2
