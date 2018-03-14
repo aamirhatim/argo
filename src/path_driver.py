@@ -17,16 +17,25 @@ import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
 from init_argo import Argo
 from geometry_msgs.msg import Vector3, Twist
+from scipy.interpolate import UnivariateSpline
+import matplotlib.pyplot as pl
+import numpy as np
+
 
 def path(argo):
     rospy.init_node("argo_path")
     pub = rospy.Publisher("/argo/wheel_speeds", Twist, queue_size = 10)
     rate = rospy.Rate(20)
 
-    cmd = raw_input("Enter 1 for line, 2 for figure eight, 3 for circle:  ")
+    cmd = 'x'
     vels = Twist()
 
     while not rospy.is_shutdown():
+        if cmd != 'q':
+            cmd = raw_input("Enter 1 for line, 2 for figure eight, 3 for circle, 4 for spline:  ")
+        else:
+            return
+
         time = rospy.get_time()
         if cmd == '1':
             print "LINE"
@@ -37,6 +46,11 @@ def path(argo):
         elif cmd == '3':
             print "CIRCLE"
             (vels.linear.x, vels.angular.z) = circle(time, argo)
+        elif cmd == '4':
+            print "SPLINE"
+            t = int(raw_input("Enter time to drive (in seconds): "))
+            spline(t, argo, pub)
+            cmd = 'q'
 
         pub.publish(vels)
         rate.sleep()
@@ -72,6 +86,29 @@ def circle(t, argo):
     ay = -r*T*T*sin(t*T)
 
     return argo.get_velocity(vx, vy, ax, ay)
+
+def spline(t, argo, pub):
+    # x = sin(pi*t), y = 0
+    vels = Twist()
+    timespace = np.linspace(0, t, 30)
+
+    Xspline = [sin(pi*timespace[j]) for j in range(len(timespace))]
+    Yspline = [0 for i in range(len(timespace))]
+
+    sx = UnivariateSpline(timespace, Xspline, k = 4)
+    sy = UnivariateSpline(timespace, Yspline, k = 4)
+
+    for q in range(len(timespace)):
+        vx = sx(timespace[q], 1)
+        ax = sx(timespace[q], 2)
+
+        vy = sy(timespace[q], 1)
+        ay = sy(timespace[q], 2)
+
+        (vels.linear.x, vels.angular.z) = argo.get_velocity(vx, vy, ax, ay)
+        print vels
+        pub.publish(vels)
+
 
 def main():
     argo = Argo()
