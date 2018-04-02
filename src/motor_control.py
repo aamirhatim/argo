@@ -7,6 +7,7 @@ import rospy
 from ar_track_alvar_msgs.msg import * ## import AR tag custom messages
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PointStamped
+import numpy as np
 
 class AR_control:
     def __init__(self):
@@ -25,12 +26,28 @@ class AR_control:
 
         self.ar_sub = rospy.Subscriber("/visualization_marker", Marker, self.get_pos)
         self.previous = PointStamped()
+        self.t = np.linspace(0, 1, 30)
+        print self.t
+        self.trail = [None for i in range(30)]
+        self.trail[0] = self.previous
+        self.trail_count = 1
 
     def get_pos(self, data):
         location = PointStamped()
         location.header = data.header
         location.point = data.pose.position
         # print location.point
+
+        if self.trail_count < 30:
+            self.trail[self.trail_count] = location
+            self.trail_count += 1
+            dT = location.header.stamp.to_sec() - self.previous.header.stamp.to_sec()
+            self.previous = location
+            print dT
+            return
+        else:
+            print "DONE"
+            return
 
         # Calculate differences from previous point
         dX = location.point.x - self.previous.point.x
@@ -72,17 +89,16 @@ class AR_control:
 
             self.argo.Lref = int(Lspeed*(-1))
             self.argo.Rref = int(Rspeed*(-1))
-            # (self.LBspeed, self.RBspeed) =
-            self.argo.move(self.argo.Lref, self.argo.Rref)
+            (self.LBspeed, self.RBspeed) = self.argo.move(self.argo.Lref, self.argo.Rref)
         elif location.point.z <= self.forward_limit:
             print "stop"
             self.argo.move(0, 0)
             self.argo.Lprevious = 0
             self.argo.Rprevious = 0
-            # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
-            # self.LBspeed = int(self.ref*(-1))
-            # self.RFspeed = int(self.ref)
-            # self.RBspeed = int(self.ref*(-1))
+            self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
+            self.LBspeed = int(self.ref*(-1))
+            self.RFspeed = int(self.ref)
+            self.RBspeed = int(self.ref*(-1))
         else:
             print "forward"
             if location.point.x < -0.1: # Turning left
@@ -99,8 +115,7 @@ class AR_control:
                 Rspeed = speed
             self.argo.Lref = int(Lspeed)
             self.argo.Rref = int(Rspeed)
-            # (self.LFspeed, self.RFspeed) =
-            self.argo.move(self.argo.Lref, self.argo.Rref)
+            (self.LFspeed, self.RFspeed) = self.argo.move(self.argo.Lref, self.argo.Rref)
 
         self.previous = location
 

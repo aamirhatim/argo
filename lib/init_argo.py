@@ -24,7 +24,7 @@ class Argo:
             self.argo = Roboclaw(self.port, 115200)
             self.argo.Open()
             self.address = 0x80                                     # Roboclaw address
-            self.version = self.argo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
+            # self.version = self.argo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
@@ -40,7 +40,7 @@ class Argo:
 
         # Set class variables
         self.radius = 0.0728                                    # Wheel radius (m)
-        self.distance = 0.265                                   # Distance between wheels (m)
+        self.distance = 0.372                                   # Distance between wheels (m)
         self.max_speed = 13000                                  # Max speed (in QPPS)
         self.scaler = 1                                         # Speed reduction factor
         self.rev_counts = 3200                                  # Encoder clicks per rotation

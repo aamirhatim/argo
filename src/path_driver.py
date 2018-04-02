@@ -18,7 +18,7 @@ sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
 from init_argo import Argo
 from geometry_msgs.msg import Vector3, Twist
 from scipy.interpolate import UnivariateSpline
-import matplotlib.pyplot as pl
+# import matplotlib.pyplot as pl
 import numpy as np
 
 
@@ -52,8 +52,13 @@ def path(argo):
             spline(t, argo, pub)
             cmd = 'q'
 
+        if cmd != 'q':
+            rate.sleep()
+        else:
+            (vels.linear.x, vels.angular.z) = 0, 0
+
         pub.publish(vels)
-        rate.sleep()
+
 
 def line(t, argo):
     # x = sin(pi*t/3)
@@ -88,12 +93,13 @@ def circle(t, argo):
     return argo.get_velocity(vx, vy, ax, ay)
 
 def spline(t, argo, pub):
-    # x = sin(pi*t), y = 0
+    # x = sin(pi*t/T), y = 0
+    r = rospy.Rate(30)
     vels = Twist()
-    timespace = np.linspace(0, t, 30)
+    timespace = np.linspace(0, t, 30*t)
 
-    Xspline = [sin(pi*timespace[j]) for j in range(len(timespace))]
-    Yspline = [0 for i in range(len(timespace))]
+    Yspline = [.3*cos(pi*timespace[j]/(t/2)) for j in range(len(timespace))]
+    Xspline = timespace #[0 for i in range(len(timespace))]
 
     sx = UnivariateSpline(timespace, Xspline, k = 4)
     sy = UnivariateSpline(timespace, Yspline, k = 4)
@@ -108,6 +114,7 @@ def spline(t, argo, pub):
         (vels.linear.x, vels.angular.z) = argo.get_velocity(vx, vy, ax, ay)
         print vels
         pub.publish(vels)
+        r.sleep()
 
 
 def main():
