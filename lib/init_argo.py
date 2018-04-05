@@ -59,7 +59,7 @@ class Argo:
         self.REint = 0
         print "Setup complete, let's roll homie ;)\n\n"
 
-    def reset_controller():
+    def reset_controller(self):
         self.LEint = 0
         self.REint = 0
         self.Lprev_err = 0
