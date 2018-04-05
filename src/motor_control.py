@@ -114,10 +114,10 @@ class AR_control:
             Rspeed = 0
 
             (left, right) = self.stop_turn_speed(x_avg)
-            print left, right
-            # Lspeed += left
-            # Rspeed += right
-            # self.argo.move(Lspeed, Rspeed)
+            # print left, right
+            Lspeed += left
+            Rspeed += right
+            self.argo.move(Lspeed, Rspeed)
 
             # Calculate turning speeds
             # if not -self.x_limit <= x_avg <= self.x_limit:
