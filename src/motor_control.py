@@ -77,11 +77,11 @@ class AR_control:
         s = abs(x) - self.x_limit
         effort = a*exp(b*exp(c*s))
         if x < 0:
-            left = -1500#int(-1*effort*self.ref)
-            right = 1500#int(effort*self.ref)
+            left = int(-1*effort*self.ref)
+            right = int(effort*self.ref)
         elif x > 0:
-            left = 1500#int(effort*self.ref)
-            right = -1500#int(-1*effort*self.ref)
+            left = int(effort*self.ref)
+            right = int(-1*effort*self.ref)
         else:
             left = 0
             right = 0
@@ -113,25 +113,31 @@ class AR_control:
             Lspeed = 0
             Rspeed = 0
 
+            (left, right) = self.stop_turn_speed(x_avg)
+            print left, right
+            # Lspeed += left
+            # Rspeed += right
+            # self.argo.move(Lspeed, Rspeed)
+
             # Calculate turning speeds
-            if not -self.x_limit <= x_avg <= self.x_limit:
-                theta = get_angle(location.point)           # Calculate theta
-                arc = (self.argo.distance/2.0)*theta/2        # Calculate arc length to travel
-                num_ticks = abs(arc*self.argo.counts_per_m)      # Convert arc length to encoder counts
-                # print "TICKS:", num_ticks
-                start = self.argo.read_encoders()           # Get current encoder info
-                enc1 = abs(start.encoderM1)
-                # while abs(enc1 - abs(start.encoderM1)) <= num_ticks:
-                #     state = self.argo.read_encoders()
-                #     enc1 = abs(state.encoderM1)
-                #
-                #     (left, right) = self.stop_turn_speed(location.point.x)
-                #     Lspeed = left
-                #     Rspeed = right
-                #     self.argo.move(Lspeed, Rspeed)
-                self.argo.move(0,0)
-            else:
-                self.argo.move(0,0)
+            # if not -self.x_limit <= x_avg <= self.x_limit:
+            #     theta = get_angle(location.point)           # Calculate theta
+            #     arc = (self.argo.distance/2.0)*theta/2        # Calculate arc length to travel
+            #     num_ticks = abs(arc*self.argo.counts_per_m)      # Convert arc length to encoder counts
+            #     # print "TICKS:", num_ticks
+            #     start = self.argo.read_encoders()           # Get current encoder info
+            #     enc1 = abs(start.encoderM1)
+            #     # while abs(enc1 - abs(start.encoderM1)) <= num_ticks:
+            #     #     state = self.argo.read_encoders()
+            #     #     enc1 = abs(state.encoderM1)
+            #     #
+            #     #     (left, right) = self.stop_turn_speed(location.point.x)
+            #     #     Lspeed = left
+            #     #     Rspeed = right
+            #     #     self.argo.move(Lspeed, Rspeed)
+            #     self.argo.move(0,0)
+            # else:
+            #     self.argo.move(0,0)
 
 
         elif direction == 'f':
