@@ -43,7 +43,7 @@ class AR_control:
         self.no_tag_count = 0
 
     def heartbeat(self):
-        if (self.no_tag_count == 3) and (not self.previous_turn == 'n'):
+        if (self.no_tag_count == 5) and (not self.previous_turn == 'n'):
             # If tag was lost while turning, turn to the last know direction of the tag
             self.go_to_direction()
 
@@ -67,7 +67,7 @@ class AR_control:
     def go_to_direction(self):
         target = self.previous.point
         theta = get_angle(target)               # Calculate theta
-        arc = (self.argo.distance/2.0)*theta            # Calculate arc length to travel
+        arc = (self.argo.distance/2.0)*theta/2            # Calculate arc length to travel
         num_ticks = abs(arc*self.argo.counts_per_m)     # Convert arc length to encoder counts
         start = self.argo.read_encoders()               # Get current encoder info
         enc = abs(start.encoderM1)
