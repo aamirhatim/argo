@@ -38,6 +38,8 @@ class AR_control:
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
 
         self.previous = PointStamped()
+        self.previous_dir = 's'
+        self.previous_turn = 'n'
         self.no_tag_count = 0
 
     def heartbeat(self):
@@ -59,15 +61,21 @@ class AR_control:
             self.argo.Rprev_err = 0
 
 
-    def get_direction(self, z):
+    def get_line_direction(self, z):
         if z <= self.back_limit:
             return 'b'                                      # Move backward
-        elif self.back_limit < z < self.forward_limit:
-            return 's'                                      # Stop
         elif z >= self.forward_limit:
             return 'f'                                      # Move forward
         else:
-            return 's'                                      # Send stop command if above criteria not met
+            return 's'                                      # Stop
+
+    def get_turn_direction(self, x):
+        if x_avg <= -self.x_limit:
+            return 'l'
+        elif x_avg >= self.x_limit:
+            return 'r'
+        else:
+            return 'n'
 
     def stop_turn_speed(self, x):
         # Turn speed Gompertz equation
@@ -97,29 +105,27 @@ class AR_control:
         x_avg = (location.point.x + self.previous.point.x)/2.0
         z_avg = (location.point.z + self.previous.point.z)/2.0
 
-        # Get direction in which Argo should move
-        direction = self.get_direction(z_avg)
+        # Get directions in which Argo should move
+        direction = self.get_line_direction(z_avg)
+        turn = self.get_turn_direction(x_avg)
+
+        # Reset controller errors if needed
+        if (not direction == self.previous_dir) or (not turn == self.previous_turn):
+            self.argo.reset_controller()
 
         # Calculate straight line speed (in QPPS)
         if direction == 's':
             # print "stop"
-            # Reset controller errors
-            self.argo.LEint = 0
-            self.argo.REint = 0
-            self.argo.Lprev_err = 0
-            self.argo.Rprev_err = 0
-
             speed = 0
             Lspeed = 0
             Rspeed = 0
 
-            if not -self.x_limit <= x_avg <= self.x_limit:
+            if not turn == 'n':
                 (left, right) = self.stop_turn_speed(x_avg)
                 # print left, right
                 Lspeed += left
                 Rspeed += right
-                
-            self.argo.move(Lspeed, Rspeed)
+                self.argo.move(Lspeed, Rspeed)
 
             # Calculate turning speeds
             # if not -self.x_limit <= x_avg <= self.x_limit:
@@ -168,6 +174,8 @@ class AR_control:
 
         # Update previous location
         self.previous = location
+        self.previous_dir = direction
+        self.previous_turn = turn
 
     def follow(self, data):
         # Only move if AR tag id 0 is identified

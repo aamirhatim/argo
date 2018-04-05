@@ -59,6 +59,12 @@ class Argo:
         self.REint = 0
         print "Setup complete, let's roll homie ;)\n\n"
 
+    def reset_controller():
+        self.LEint = 0
+        self.REint = 0
+        self.Lprev_err = 0
+        self.Rprev_err = 0
+
     def pd_control(self, Lspeed, Rspeed):
         # Controller outputs a percent effort (0 - 100) which will be applied to the reference motor speeds
         feedback = self.read_encoders()
