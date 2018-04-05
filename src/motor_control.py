@@ -71,7 +71,7 @@ class AR_control:
 
     def stop_turn_speed(self, x):
         # Turn speed Gompertz equation
-        a = 0.5
+        a = 0.7
         b = -5
         c = -9
         s = abs(x) - self.x_limit
