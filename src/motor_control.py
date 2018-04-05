@@ -43,8 +43,9 @@ class AR_control:
         self.no_tag_count = 0
 
     def heartbeat(self):
-        if (self.no_tag_count == 5) and (not self.previous_turn == 'n'):
+        if (self.no_tag_count == 4) and (not self.previous_turn == 'n'):
             # If tag was lost while turning, turn to the last know direction of the tag
+            print "TURNING..."
             self.go_to_direction()
 
         if self.no_tag_count > 5:
