@@ -45,7 +45,8 @@ class AR_control:
     def heartbeat(self):
         if (self.no_tag_count == 4) and (not self.previous_turn == 'n'):
             # If tag was lost while turning, turn to the last know direction of the tag
-            print "TURNING..."
+            print "TURNING...
+            "
             self.go_to_direction()
 
         if self.no_tag_count > 5:
@@ -74,6 +75,7 @@ class AR_control:
         enc = abs(start.encoderM1)
 
         while abs(enc - abs(start.encoderM1)) <= num_ticks:
+            print "hi"
             state = self.argo.read_encoders()
             enc = abs(state.encoderM1)
 
