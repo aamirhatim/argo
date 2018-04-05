@@ -43,6 +43,10 @@ class AR_control:
         self.no_tag_count = 0
 
     def heartbeat(self):
+        if (self.no_tag_count == 3) and (not self.previous_turn == 'n'):
+            # If tag was lost while turning, turn to the last know direction of the tag
+            self.go_to_direction()
+
         if self.no_tag_count > 5:
             state = self.argo.read_encoders()
             Lspeed = int(state.speedM2*.7)
@@ -60,6 +64,20 @@ class AR_control:
             self.argo.Lprev_err = 0
             self.argo.Rprev_err = 0
 
+    def go_to_direction(self):
+        target = self.previous.point
+        theta = get_angle(target)               # Calculate theta
+        arc = (self.argo.distance/2.0)*theta            # Calculate arc length to travel
+        num_ticks = abs(arc*self.argo.counts_per_m)     # Convert arc length to encoder counts
+        start = self.argo.read_encoders()               # Get current encoder info
+        enc = abs(start.encoderM1)
+
+        while abs(enc - abs(start.encoderM1)) <= num_ticks:
+            state = self.argo.read_encoders()
+            enc = abs(state.encoderM1)
+
+            (Lspeed, Rspeed) = self.stop_turn_speed(target.x)
+            self.argo.move(Lspeed, Rspeed)
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
@@ -79,7 +97,7 @@ class AR_control:
 
     def stop_turn_speed(self, x):
         # Turn speed Gompertz equation
-        a = 0.7
+        a = 0.65
         b = -5
         c = -9
         s = abs(x) - self.x_limit
@@ -122,7 +140,6 @@ class AR_control:
 
             if not turn == 'n':
                 (left, right) = self.stop_turn_speed(x_avg)
-                # print left, right
                 Lspeed += left
                 Rspeed += right
                 self.argo.move(Lspeed, Rspeed)
