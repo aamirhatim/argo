@@ -70,9 +70,9 @@ class AR_control:
             return 's'                                      # Stop
 
     def get_turn_direction(self, x):
-        if x_avg <= -self.x_limit:
+        if x <= -self.x_limit:
             return 'l'
-        elif x_avg >= self.x_limit:
+        elif x >= self.x_limit:
             return 'r'
         else:
             return 'n'
