@@ -113,10 +113,12 @@ class AR_control:
             Lspeed = 0
             Rspeed = 0
 
-            (left, right) = self.stop_turn_speed(x_avg)
-            # print left, right
-            Lspeed += left
-            Rspeed += right
+            if not -self.x_limit <= x_avg <= self.x_limit:
+                (left, right) = self.stop_turn_speed(x_avg)
+                # print left, right
+                Lspeed += left
+                Rspeed += right
+                
             self.argo.move(Lspeed, Rspeed)
 
             # Calculate turning speeds
@@ -154,7 +156,7 @@ class AR_control:
             # Backward speed governing Gompertz equation
             a = 0.8                                     # Max reverse speed will be 80% of max speed
             b = -5
-            c = -8
+            c = -11
             s = self.back_limit - z_avg      # Location centered at back_limit
             effort = a*exp(b*exp(c*s))
             speed = int(-1*effort*self.ref)             # Multiply by -1 to reverse motor rotation
