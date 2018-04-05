@@ -41,7 +41,8 @@ class Argo:
         # Set class variables
         self.radius = 0.0728                                    # Wheel radius (m)
         self.distance = 0.372                                   # Distance between wheels (m)
-        self.max_speed = 13000                                  # Max speed (in QPPS)
+        self.max_speed = 13000                                  # Global max speed (in QPPS)
+        self.session_max = 13000                                # Max speed for current session (in QPPS)
         self.scaler = 1                                         # Speed reduction factor
         self.rev_counts = 3200                                  # Encoder clicks per rotation
         self.circ = .4574                                       # Wheel circumference (m)
@@ -49,60 +50,76 @@ class Argo:
         self.conv = self.rev_counts/(2*pi)                      # Wheel speed conversion factor
         self.Lref = 0                                           # Left wheel reference speed
         self.Rref = 0                                           # Right wheel reference speed
-        self.Lprevious = 0                                      # Previous time step value for left wheel
-        self.Rprevious = 0                                      # Previous time step value for right wheel
-        self.Kp = .07                                           # Proportional gain
-        self.Kd = .19                                           # Derivative gain
+        self.Lprev_err = 0                                      # Previous error value for left wheel
+        self.Rprev_err = 0                                      # Previous error value for right wheel
+        self.Kp = .004                                           # Proportional gain
+        self.Kd = .001                                           # Derivative gain
+        self.Ki = .0004
+        self.LEint = 0
+        self.REint = 0
         print "Setup complete, let's roll homie ;)\n\n"
 
     def pd_control(self, Lspeed, Rspeed):
+        # Controller outputs a percent effort (0 - 100) which will be applied to the reference motor speeds
         feedback = self.read_encoders()
         M1 = feedback.speedM1
         M2 = feedback.speedM2
+        # print "ACTUAL:",M2,M1
+        # print "DESIRED:",Lspeed,Rspeed
 
-        print Rspeed
-        # print M1
-        print Lspeed, "\n"
-        # print M2
+        # Calculate current speed error for both motors
+        Lerror = Lspeed - M2
+        Rerror = Rspeed - M1
+        # print "ERROR:",Lerror,Rerror
 
-        Rerror = self.Rref - M1
-        Lerror = self.Lref - M2
+        # Calculate derivative error
+        Ldot = Lerror - self.Lprev_err
+        Rdot = Rerror - self.Rprev_err
+        # print "D-ERROR:",Ldot,Rdot
 
-        Rdot = M1 - self.Rprevious
-        Ldot = M2 - self.Lprevious
+        # Calculate integral error
+        self.LEint += Lerror
+        self.REint += Rerror
 
-        Ru = self.Kp*Rerror + self.Kd*Rdot
-        Lu = self.Kp*Lerror + self.Kd*Ldot
+        # Compute effort
+        Lu = self.Kp*Lerror + self.Kd*Ldot + self.Ki*self.LEint
+        Ru = self.Kp*Rerror + self.Kd*Rdot + self.Ki*self.REint
 
-        self.Rprevious = M1
-        self.Lprevious = M2
+        if Lu > 100.0:
+            Lu = 100.0
+        elif Lu < -100.0:
+            Lu = -100
 
-        newRspeed = int(round(Ru + Rspeed))
-        newLspeed = int(round(Lu + Lspeed))
+        if Ru > 100.0:
+            Ru = 100.0
+        elif Ru < -100.0:
+            Ru = -100.0
 
-        if newRspeed > self.max_speed:
-            newRspeed == self.max_speed
-        elif newRspeed < -self.max_speed:
-            newRspeed = -self.max_speed
-        if newLspeed > self.max_speed:
-            newLspeed = self.max_speed
-        elif newLspeed < -self.max_speed:
-            newLspeed = -self.max_speed
+        # print "EFFORT:",Lu,Ru
 
-        return (int(newLspeed), int(newRspeed))
+        # Set new L and R speeds
+        Lspeed = int((Lu/100)*self.session_max)
+        Rspeed = int((Ru/100)*self.session_max)
+        # print "CONTROLLED:",Lspeed, Rspeed,"\n"
+
+        self.Rprev_err = Rerror
+        self.Lprev_err = Lerror
+
+        return (Lspeed, Rspeed)
 
     def move(self, Lspeed, Rspeed):
         if Lspeed == 0 and Rspeed == 0:
             self.argo.SpeedM1(self.address, 0)
             self.argo.SpeedM2(self.address, 0)
-            self.previous = 0
             return
 
         (Lspeed, Rspeed) = self.pd_control(Lspeed, Rspeed)
         self.argo.SpeedM1(self.address, Rspeed)
         self.argo.SpeedM2(self.address, Lspeed)
 
-        return (Lspeed, Rspeed)
+    def force_speed(self, Lspeed, Rspeed):
+        self.argo.SpeedM1(self.address, Rspeed)
+        self.argo.SpeedM2(self.address, Lspeed)
 
     def get_velocity(self, vx, vy, ax, ay):
         v = sqrt((vx*vx) + (vy*vy))                             # Linear velocity
@@ -153,5 +170,5 @@ class Argo:
         mov.speedM1 = sp1[1]
         mov.speedM2 = sp2[1]
 
-        self.encoder.publish(mov)
+        # self.encoder.publish(mov)
         return mov
