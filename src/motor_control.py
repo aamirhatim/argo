@@ -32,8 +32,8 @@ class AR_control:
         self.RBspeed = int(self.ref*(-1))       # Right wheel backward speed
 
         self.forward_limit = 0.8
-        self.back_limit = 0.6
-        self.x_limit = 0.15
+        self.back_limit = 0.5
+        self.x_limit = 0.1
 
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
 
