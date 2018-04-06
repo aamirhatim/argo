@@ -129,13 +129,14 @@ class AR_control:
         return (left, right)
 
     def move_turn_speed(self, x):
-        print "TURN & MOVE!",x
+        print "TURN & MOVE!"
         state = self.argo.read_encoders()                       # Read motor states
         wheel_speed = abs((state.speedM2 + state.speedM1)/2.0)  # Get absolute average of wheel speeds
         T = self.argo.session_max*2                             # Set period equal to the max speed
 
         # Slow down Argo if x displacement is large so it has a better chance of seeing the tag when turning
-        (left, right) = stop_turn_speed(x)                      # First get the turn speed as if it were stopped
+        (left, right) = self.stop_turn_speed(x)                 # First get the turn speed as if it were stopped
+        print left,right
         left = left*np.cos(np.pi*wheel_speed/T)                 # Scale down stopped turn speed depending on Argo's current wheel speed
         right = right*np.cos(np.pi*wheel_speed/T)
         return (left, right)
@@ -184,7 +185,9 @@ class AR_control:
             # Calculate turn speed
             if not turn == 'n':
                 (left, right) = self.move_turn_speed(x_avg)
-                # print left, right
+                print left, right
+                Lspeed += left
+                Rspeed += right
 
         elif direction == 'b':
             # Backward speed governing Gompertz equation
