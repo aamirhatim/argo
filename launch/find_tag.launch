@@ -1,15 +1,6 @@
-<!-- This launch file initiates AR tag recognition -->
+<!-- This launch file initiates AR tag recognition and following-->
 
 <launch>
-
-	<!-- <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
-    <param name="video_device" value="/dev/video0" />
-    <param name="image_width" value="640" />
-    <param name="image_height" value="480" />
-    <param name="pixel_format" value="yuyv" />
-    <param name="camera_frame_id" value="usb_cam" />
-    <param name="io_method" value="mmap"/>
-  </node> -->
 
 	<include file="$(find raspicam_node)/launch/camera_module_v2_640x480_30fps.launch"/>
   <node name="start_capture" pkg="argo" type="start_capture.py"/>
@@ -22,5 +13,7 @@
 		<arg name="cam_info_topic" value="/raspicam_node/camera_info" />
 		<arg name="output_frame" value="raspicam" />
 	</include>
+
+	<node name="speed_controller" pkg="argo" type="motor_control.py" output="screen" />
 
 </launch>
