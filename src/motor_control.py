@@ -35,6 +35,7 @@ class AR_control:
         self.forward_limit = 0.65
         self.back_limit = 0.5
         self.x_limit = 0.1
+        self.max_range = 3.0
 
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
 
@@ -46,12 +47,12 @@ class AR_control:
     def heartbeat(self):
         state = self.argo.read_encoders()
 
-        if (self.no_tag_count == 4) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
+        if (self.no_tag_count == 5) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
             # If tag was lost while turning, turn to the last know direction of the tag
             print "TURNING..."
             self.go_to_direction()
 
-        if self.no_tag_count > 5:
+        if self.no_tag_count > 6:
             Lspeed = int(state.speedM2*.7)
             Rspeed = int(state.speedM1*.7)
             if Lspeed**2 < 2500:
@@ -131,16 +132,16 @@ class AR_control:
         return (left, right)
 
     def move_turn_speed(self, x):
-        print "TURN & MOVE!"
+        # print "TURN & MOVE!"
         state = self.argo.read_encoders()                       # Read motor states
         wheel_speed = abs((state.speedM2 + state.speedM1)/2.0)  # Get absolute average of wheel speeds
         T = self.argo.session_max*2                             # Set period equal to the max speed
 
         # Slow down Argo if x displacement is large so it has a better chance of seeing the tag when turning
         (left, right) = self.stop_turn_speed(x)                 # First get the turn speed as if it were stopped
-        print left,right
-        left = left*np.cos(np.pi*wheel_speed/T)                 # Scale down stopped turn speed depending on Argo's current wheel speed
-        right = right*np.cos(np.pi*wheel_speed/T)
+        # print left,right
+        left = left*.5*np.cos(np.pi*wheel_speed/T)                 # Scale down stopped turn speed depending on Argo's current wheel speed
+        right = right*.5*np.cos(np.pi*wheel_speed/T)
         return (left, right)
 
     def speed_calc(self, data):
@@ -176,8 +177,8 @@ class AR_control:
         elif direction == 'f':
             # Forward speed governing Gompertz equation: y = e^(b*e^(c*s))
             a = 1                               # Equation amplitude
-            b = -5.0                            # Shifts equations along x-axis
-            c = -3                              # Adjusts growth scaling of function
+            b = -4.0                            # Shifts equations along x-axis
+            c = -2.0                            # Adjusts growth scaling of function
             s = z_avg - self.forward_limit      # Location in space centered at forward_limit
             effort = a*exp(b*exp(c*s))          # Effort is percentage of max speed (self.ref)
             speed = int(effort*self.ref)
