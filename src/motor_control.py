@@ -16,6 +16,7 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PointStamped, Point
 import numpy as np
 from math import exp, degrees
+import RPi.GPIO as GPIO
 
 def get_angle(pos):
     theta = np.arctan(pos.x/pos.z)
@@ -32,6 +33,11 @@ class AR_control:
         self.previous_turn = 'x'                    # Previous turning direction (left, right, none)
         self.last_known = AlvarMarkers()            # Last known data value
         self.no_tag_count = 0                       # Counts every time a tag is not located
+
+        # Set up battery indicator
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(21,GPIO.OUT)
+        GPIO.output(21,GPIO.LOW)
 
         # Define range limits
         self.forward_limit = 0.65                   # Minimum distance to move forward
@@ -251,6 +257,7 @@ class AR_control:
         if battery < 60:
             print "IM DYING :(", battery
             self.ramp_down()
+            GPIO.output(29,GPIO.HIGH)
             return
 
         # Only move if AR tag id 0 is identified
