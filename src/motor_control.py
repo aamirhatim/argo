@@ -21,6 +21,7 @@ class AR_control:
         self.argo = Argo()
         if self.argo.motor_status == 1:
             return
+        self.argo.reset_controller()
 
         self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
         print "Max speed set to:",self.ref,"QPPS."
@@ -159,22 +160,22 @@ class AR_control:
 
         elif direction == 'f':
             # Forward speed governing Gompertz equation: y = e^(b*e^(c*s))
-            a = 1                                       # Equation amplitude
-            b = -5.0                                    # Shifts equations along x-axis
-            c = -3                                      # Adjusts growth scaling of function
-            s = z_avg - self.forward_limit   # Location in space centered at forward_limit
-            effort = a*exp(b*exp(c*s))                  # Effort is percentage of max speed (self.ref)
+            a = 1                               # Equation amplitude
+            b = -5.0                            # Shifts equations along x-axis
+            c = -3                              # Adjusts growth scaling of function
+            s = z_avg - self.forward_limit      # Location in space centered at forward_limit
+            effort = a*exp(b*exp(c*s))          # Effort is percentage of max speed (self.ref)
             speed = int(effort*self.ref)
             Lspeed = speed
             Rspeed = speed
         elif direction == 'b':
             # Backward speed governing Gompertz equation
-            a = 0.8                                     # Max reverse speed will be 80% of max speed
+            a = 0.8                             # Max reverse speed will be 80% of max speed
             b = -5
             c = -11
-            s = self.back_limit - z_avg      # Location centered at back_limit
+            s = self.back_limit - z_avg         # Location centered at back_limit
             effort = a*exp(b*exp(c*s))
-            speed = int(-1*effort*self.ref)             # Multiply by -1 to reverse motor rotation
+            speed = int(-1*effort*self.ref)     # Multiply by -1 to reverse motor rotation
             Lspeed = speed
             Rspeed = speed
 
