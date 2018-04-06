@@ -27,11 +27,6 @@ class AR_control:
         self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
         print "Max speed set to:",self.ref,"QPPS."
         self.argo.session_max = self.ref
-                                                # Initialize:
-        self.LFspeed = int(self.ref)            # Left wheel forward speed
-        self.LBspeed = int(self.ref*(-1))       # Left wheel backward speed
-        self.RFspeed = int(self.ref)            # Right wheel forward speed
-        self.RBspeed = int(self.ref*(-1))       # Right wheel backward speed
 
         self.forward_limit = 0.65
         self.back_limit = 0.5
@@ -231,7 +226,10 @@ class AR_control:
 
     def follow(self, data):
         battery = self.argo.check_battery()
-        print battery
+        if battery < 600:
+            print "IM DYING :("
+            self.ramp_down()
+            return
 
         # Only move if AR tag id 0 is identified
         if not len(data.markers) == 1:
