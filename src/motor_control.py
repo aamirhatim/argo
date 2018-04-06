@@ -99,7 +99,7 @@ class AR_control:
             Lspeed = curr_state.speedM2 + left
             Rspeed = curr_state.speedM1 + right
             self.argo.move(Lspeed, Rspeed)
-            rospy.sleep(.3)
+            # rospy.sleep(.1)
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
@@ -172,7 +172,7 @@ class AR_control:
         turn = self.get_turn_direction(x_avg)
 
         # Reset controller errors if needed
-        if (not direction == self.previous_dir) or (not turn == self.previous_turn):
+        if (not direction == self.previous_dir) or (not turn == self.previous_turn and direction == 's'):
             self.argo.reset_controller()
 
         # Calculate straight line speed (in QPPS)
