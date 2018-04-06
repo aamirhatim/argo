@@ -8,7 +8,7 @@
 
 import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
-from roboclaw import Roboclaw                                   # Import RoboClaw library for motor controls
+from roboclaw import Roboclaw                                       # Import RoboClaw library for motor controls
 import rospy
 from geometry_msgs.msg import Vector3, Twist
 from argo.msg import Encoder
@@ -24,14 +24,14 @@ class Argo:
             self.argo = Roboclaw(self.port, 115200)
             self.argo.Open()
             self.address = 0x80                                     # Roboclaw address
-            # self.version = self.argo.ReadVersion(self.address)     # Test connection by getting the Roboclaw version
+            self.version = self.argo.ReadVersion(self.address)      # Test connection by getting the Roboclaw version
         except:
             print "Unable to connect to Roboclaw port: ", self.port, "\nCheck your port and setup then try again.\nExiting..."
             self.motor_status = 1
             return
 
         # Follow through with setup if Roboclaw connected successfully
-        # print "Roboclaw detected! Version:", self.version[1]
+        print "Roboclaw detected! Version:", self.version[1]
         print "Setting up..."
 
         # Set up publishers and subscribers
@@ -43,7 +43,6 @@ class Argo:
         self.distance = 0.372                                   # Distance between wheels (m)
         self.max_speed = 13000                                  # Global max speed (in QPPS)
         self.session_max = 13000                                # Max speed for current session (in QPPS)
-        self.scaler = 1                                         # Speed reduction factor
         self.rev_counts = 3200                                  # Encoder clicks per rotation
         self.circ = .4574                                       # Wheel circumference (m)
         self.counts_per_m = int(self.rev_counts/self.circ)      # Encoder counts per meter
@@ -52,15 +51,14 @@ class Argo:
         self.Rref = 0                                           # Right wheel reference speed
         self.Lprev_err = 0                                      # Previous error value for left wheel
         self.Rprev_err = 0                                      # Previous error value for right wheel
-        self.Kp = .004                                           # Proportional gain
-        self.Kd = .001                                           # Derivative gain
-        self.Ki = .0004
-        self.LEint = 0
-        self.REint = 0
+        self.Kp = .004                                          # Proportional gain
+        self.Kd = .001                                          # Derivative gain
+        self.Ki = .0004                                         # Integral gain
+        self.LEint = 0                                          # Left wheel integral gain
+        self.REint = 0                                          # Right wheel integral gain
         print "Setup complete, let's roll homie ;)\n\n"
 
     def reset_controller(self):
-        return
         self.LEint = 0
         self.REint = 0
         self.Lprev_err = 0
@@ -71,18 +69,14 @@ class Argo:
         feedback = self.read_encoders()
         M1 = feedback.speedM1
         M2 = feedback.speedM2
-        # print "ACTUAL:",M2,M1
-        # print "DESIRED:",Lspeed,Rspeed
 
         # Calculate current speed error for both motors
         Lerror = Lspeed - M2
         Rerror = Rspeed - M1
-        # print "ERROR:",Lerror,Rerror
 
         # Calculate derivative error
         Ldot = Lerror - self.Lprev_err
         Rdot = Rerror - self.Rprev_err
-        # print "D-ERROR:",Ldot,Rdot
 
         # Calculate integral error
         self.LEint += Lerror
@@ -92,6 +86,7 @@ class Argo:
         Lu = self.Kp*Lerror + self.Kd*Ldot + self.Ki*self.LEint
         Ru = self.Kp*Rerror + self.Kd*Rdot + self.Ki*self.REint
 
+        # Saturate efforts if it is over +/-100%
         if Lu > 100.0:
             Lu = 100.0
         elif Lu < -100.0:
@@ -102,12 +97,9 @@ class Argo:
         elif Ru < -100.0:
             Ru = -100.0
 
-        # print "EFFORT:",Lu,Ru
-
         # Set new L and R speeds
         Lspeed = int((Lu/100)*self.session_max)
         Rspeed = int((Ru/100)*self.session_max)
-        # print "CONTROLLED:",Lspeed, Rspeed,"\n"
 
         self.Rprev_err = Rerror
         self.Lprev_err = Lerror
@@ -179,8 +171,6 @@ class Argo:
         mov.encoderM2 = enc2[1]
         mov.speedM1 = sp1[1]
         mov.speedM2 = sp2[1]
-
-        # self.encoder.publish(mov)
         return mov
 
     def check_battery(self):

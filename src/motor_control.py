@@ -5,7 +5,7 @@ sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
 from init_argo import Argo
 from argo.msg import Encoder
 import rospy
-from ar_track_alvar_msgs.msg import * ## import AR tag custom messages
+from ar_track_alvar_msgs.msg import *               # Import AR tag custom messages
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PointStamped, Point
 import numpy as np
@@ -21,30 +21,28 @@ class AR_control:
         self.argo = Argo()
         if self.argo.motor_status == 1:
             return
+        self.previous = PointStamped()              # Previous known location
+        self.previous_dir = 'x'                     # Previous direction (forward, backward, stop)
+        self.previous_turn = 'x'                    # Previous turning direction (left, right, none)
+        self.last_known = AlvarMarkers()            # Last known data value
+        self.no_tag_count = 0                       # Counts every time a tag is not located
+
+        # Define range limits
+        self.forward_limit = 0.65                   # Minimum distance to move forward
+        self.back_limit = 0.5                       # Maximum distance to move backwards
+        self.x_limit = 0.1                          # Minimum x-range for turning
+
+        # Reset parameters
         self.argo.reset_controller()
         self.argo.reset_encoders()
-
-        self.previous = PointStamped()
-
-        self.forward_limit = 0.65
-        self.back_limit = 0.5
-        self.x_limit = 0.1
-        self.max_range = 3.0
-        self.speed_change_limit = 1000
-
         self.reset_previous()
 
         self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
         print "Max speed set to:",self.ref,"QPPS."
-        self.argo.session_max = self.ref
+        self.argo.session_max = self.ref            # Set max speed for current session
 
+        # Set up subscriber
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
-
-
-        self.previous_dir = 'x'
-        self.previous_turn = 'x'
-        self.last_known = AlvarMarkers()
-        self.no_tag_count = 0
 
     def heartbeat(self):
         state = self.argo.read_encoders()
@@ -53,12 +51,12 @@ class AR_control:
                 self.speed_calc(self.last_known.markers[0])
             return
 
+        # If tag was lost while turning, turn to the last know direction of the tag
         if (self.no_tag_count == 5) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
-            # If tag was lost while turning, turn to the last know direction of the tag
-            print "TURNING..."
             self.go_to_direction()
             return
 
+        # Slow down speed if tag not located after some time
         if self.no_tag_count > 6:
             Lspeed = int(state.speedM2*.7)
             Rspeed = int(state.speedM1*.7)
@@ -68,15 +66,15 @@ class AR_control:
                 Rspeed = 0
             self.argo.force_speed(Lspeed, Rspeed)
 
+        # Reset controllers and previous position if tag not locateed after a long time
         if self.no_tag_count > 20:
-            if state.speedM1 <= 20:
+            if state.speedM1 <= 20 or state.speedM2 <= 20:
                 self.argo.reset_controller()
                 self.reset_previous()
 
     def reset_previous(self):
         p = Point(0.0, 0.0, (self.forward_limit + self.back_limit)/2.0)
         self.previous.point = p
-        # print self.previous
 
     def go_to_direction(self):
         target = self.previous.point
@@ -141,7 +139,6 @@ class AR_control:
         return (left, right)
 
     def move_turn_speed(self, x):
-        # print "TURN & MOVE!"
         state = self.argo.read_encoders()                       # Read motor states
         wheel_speed = abs((state.speedM2 + state.speedM1)/2.0)  # Get absolute average of wheel speeds
         T = self.argo.session_max*2                             # Set period equal to the max speed
@@ -156,9 +153,9 @@ class AR_control:
         state = self.argo.read_encoders()
         left = int(state.speedM2*.7)
         right = int(state.speedM1*.7)
-        if left**2 < 1000:
+        if left**2 < 2500:
             left = 0
-        if right**2 < 1000:
+        if right**2 < 2500:
             right = 0
         return (left, right)
 
@@ -191,7 +188,6 @@ class AR_control:
 
         # Calculate straight line speed (in QPPS)
         if direction == 's':
-            print "stop"
             (Lspeed, Rspeed) = self.ramp_down()
 
             # Calculate stopped turn speed
@@ -201,7 +197,6 @@ class AR_control:
                 Rspeed += right
 
         elif direction == 'f':
-            print "F"
             # Forward speed governing Gompertz equation: y = e^(b*e^(c*s))
             a = 1                               # Equation amplitude
             b = -4.0                            # Shifts equations along x-axis
@@ -236,16 +231,6 @@ class AR_control:
                 Rspeed += right
 
         # Send speeds to PID controller
-        print Lspeed, Rspeed
-
-        # Gradually increase speed if there is a big jump in wheel speeds
-        state = self.argo.read_encoders()
-        changeL = abs(state.speedM2 - Lspeed)
-        changeR = abs(state.speedM1 - Rspeed)
-
-        # if (changeL > self.speed_change_limit) or (changeR > self.speed_change_limit):
-        #     self.ramp_up(Lspeed, Rspeed)
-
         self.argo.move(Lspeed, Rspeed)
 
         # Update previous location
@@ -255,6 +240,7 @@ class AR_control:
 
     def follow(self, data):
         battery = self.argo.check_battery()
+        # If battery is low, do not run motor commands
         if battery < 60:
             print "IM DYING :(", battery
             self.ramp_down()
@@ -263,13 +249,13 @@ class AR_control:
         # Only move if AR tag id 0 is identified
         if not len(data.markers) == 1:
             self.no_tag_count += 1
-            print "WHERE ARE YOU?"
+            # print "WHERE ARE YOU?"
         elif not data.markers[0].id == 0:
             self.no_tag_count += 1
-            print "THAT'S NOT YOU"
+            # print "THAT'S NOT YOU"
         else:
             self.no_tag_count = 0
-            print "I SEE YOU BUD!"
+            # print "I SEE YOU BUD!"
             self.speed_calc(data.markers[0])
 
         self.heartbeat()
