@@ -32,7 +32,7 @@ class AR_control:
         self.RFspeed = int(self.ref)            # Right wheel forward speed
         self.RBspeed = int(self.ref*(-1))       # Right wheel backward speed
 
-        self.forward_limit = 0.8
+        self.forward_limit = 0.65
         self.back_limit = 0.5
         self.x_limit = 0.1
 
@@ -44,13 +44,14 @@ class AR_control:
         self.no_tag_count = 0
 
     def heartbeat(self):
+        state = self.argo.read_encoders()
+
         if (self.no_tag_count == 4) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
             # If tag was lost while turning, turn to the last know direction of the tag
             print "TURNING..."
             self.go_to_direction()
 
         if self.no_tag_count > 5:
-            state = self.argo.read_encoders()
             Lspeed = int(state.speedM2*.7)
             Rspeed = int(state.speedM1*.7)
             if Lspeed**2 < 2500:
@@ -60,7 +61,8 @@ class AR_control:
             self.argo.force_speed(Lspeed, Rspeed)
 
         if self.no_tag_count > 10:
-            self.argo.reset_controller()
+            if state.speedM1 <= 50:
+                self.argo.reset_controller()
 
     def go_to_direction(self):
         target = self.previous.point
