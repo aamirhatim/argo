@@ -43,9 +43,11 @@ class AR_control:
         self.argo.reset_encoders()
         self.reset_previous()
 
-        self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
+        # self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
+        # print "Max speed set to:",self.ref,"QPPS."
+        # self.argo.session_max = self.ref            # Set max speed for current session
+        self.argo.session_max = int(rospy.get_param("~speed")*self.argo.max_speed/100)
         print "Max speed set to:",self.ref,"QPPS."
-        self.argo.session_max = self.ref            # Set max speed for current session
 
         # Set up subscriber
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)

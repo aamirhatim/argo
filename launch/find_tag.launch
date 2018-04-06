@@ -2,6 +2,8 @@
 
 <launch>
 
+	<arg name="scale" default="100" />
+
 	<include file="$(find raspicam_node)/launch/camera_module_v2_640x480_30fps.launch"/>
   <node name="start_capture" pkg="argo" type="start_capture.py"/>
 
@@ -14,6 +16,8 @@
 		<arg name="output_frame" value="raspicam" />
 	</include>
 
-	<node name="speed_controller" pkg="argo" type="motor_control.py" output="screen" />
+	<node name="speed_controller" pkg="argo" type="motor_control.py" output="screen">
+		<param name="speed" value="$(arg scale)" />
+	</node>
 
 </launch>
