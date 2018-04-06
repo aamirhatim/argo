@@ -36,8 +36,11 @@ class AR_control:
 
         # Set up battery indicator
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
         GPIO.setup(21,GPIO.OUT)
         GPIO.output(21,GPIO.LOW)
+        GPIO.setup(20,GPIO.OUT)
+        GPIO.output(20,GPIO.LOW)
 
         # Define range limits
         self.forward_limit = 0.65                   # Minimum distance to move forward
@@ -253,22 +256,25 @@ class AR_control:
 
     def follow(self, data):
         battery = self.argo.check_battery()
-        # If battery is low, do not run motor commands
+        # If battery is low, turn on warning light and do not run motor commands
         if battery < 60:
             print "IM DYING :(", battery
             self.ramp_down()
-            GPIO.output(29,GPIO.HIGH)
+            GPIO.output(21,GPIO.HIGH)
             return
 
         # Only move if AR tag id 0 is identified
         if not len(data.markers) == 1:
             self.no_tag_count += 1
+            GPIO.output(20,GPIO.LOW)
             # print "WHERE ARE YOU?"
         elif not data.markers[0].id == 0:
             self.no_tag_count += 1
+            GPIO.output(20,GPIO.LOW)
             # print "THAT'S NOT YOU"
         else:
             self.no_tag_count = 0
+            GPIO.output(20,GPIO.HIGH)
             # print "I SEE YOU BUD!"
             self.speed_calc(data.markers[0])
 
