@@ -42,8 +42,6 @@ class AR_control:
         self.previous_turn = 'n'
         self.no_tag_count = 0
 
-        self.state = self.argo.read_encoders()
-
     def heartbeat(self):
         if (self.no_tag_count == 4) and (not self.previous_turn == 'n'):
             # If tag was lost while turning, turn to the last know direction of the tag
@@ -61,28 +59,23 @@ class AR_control:
             self.argo.force_speed(Lspeed, Rspeed)
 
         if self.no_tag_count > 10:
-            # Reset controller errors
-            self.argo.LEint = 0
-            self.argo.REint = 0
-            self.argo.Lprev_err = 0
-            self.argo.Rprev_err = 0
+            self.argo.reset_controller()
 
     def go_to_direction(self):
         target = self.previous.point
+        effort = 1.0
         theta = get_angle(target)                       # Calculate theta
         arc = (self.argo.distance/2.0)*theta            # Calculate arc length to travel
-        num_ticks = arc*self.argo.counts_per_m     # Convert arc length to encoder counts
-        self.state = self.argo.read_encoders()          # Get current encoder info
-        # enc = abs(self.state.encoderM1)
-        enc_final = enc + num_ticks
-        # enc_prev = enc
+        num_ticks = arc*self.argo.counts_per_m          # Convert arc length to encoder counts
+        T = num_ticks/2.0                               # Calculate time period for acceleration control
+        state = self.argo.read_encoders()               # Get current encoder info
+        enc_final = state.encoderM1 + num_ticks         # Calculate final encoder position after turn
 
         while effort <= .05:
             curr_state = self.argo.read_encoders()
             remainder = enc_final - curr_state.encoderM1
 
-            # Compute an effort
-            T = num_ticks/2.0
+            # Compute an effort and use it to determine turn speed
             effort = (.65)*np.sin((np.pi*remainder)/T)
             if self.previous_turn == 'l':
                 left = int(-1*effort*self.ref)
@@ -91,11 +84,12 @@ class AR_control:
                 left = int(effort*self.ref)
                 right = int(-1*effort*self.ref)
 
+            # Add turn speed to current speed and send command to motors
             Lspeed = curr_state.speedM2 + left
             Rspeed = curr_state.speedM1 + right
             self.argo.move(Lspeed, Rspeed)
-            rospy.sleep(.3)
-            
+
+        # Stop the motors after Argo completes the turn
         self.argo.move(0, 0)
 
 
@@ -154,36 +148,14 @@ class AR_control:
         # Calculate straight line speed (in QPPS)
         if direction == 's':
             # print "stop"
-            speed = 0
             Lspeed = 0
             Rspeed = 0
 
+            # Calculate stopped turn speed
             if not turn == 'n':
                 (left, right) = self.stop_turn_speed(x_avg)
                 Lspeed += left
                 Rspeed += right
-                # self.argo.move(Lspeed, Rspeed)
-
-            # Calculate turning speeds
-            # if not -self.x_limit <= x_avg <= self.x_limit:
-            #     theta = get_angle(location.point)           # Calculate theta
-            #     arc = (self.argo.distance/2.0)*theta/2        # Calculate arc length to travel
-            #     num_ticks = abs(arc*self.argo.counts_per_m)      # Convert arc length to encoder counts
-            #     # print "TICKS:", num_ticks
-            #     start = self.argo.read_encoders()           # Get current encoder info
-            #     enc1 = abs(start.encoderM1)
-            #     # while abs(enc1 - abs(start.encoderM1)) <= num_ticks:
-            #     #     state = self.argo.read_encoders()
-            #     #     enc1 = abs(state.encoderM1)
-            #     #
-            #     #     (left, right) = self.stop_turn_speed(location.point.x)
-            #     #     Lspeed = left
-            #     #     Rspeed = right
-            #     #     self.argo.move(Lspeed, Rspeed)
-            #     self.argo.move(0,0)
-            # else:
-            #     self.argo.move(0,0)
-
 
         elif direction == 'f':
             # Forward speed governing Gompertz equation: y = e^(b*e^(c*s))
