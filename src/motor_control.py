@@ -44,7 +44,7 @@ class AR_control:
         self.no_tag_count = 0
 
     def heartbeat(self):
-        if (self.no_tag_count == 4) and (not self.previous_turn == 'n'):
+        if (self.no_tag_count == 4) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
             # If tag was lost while turning, turn to the last know direction of the tag
             print "TURNING..."
             self.go_to_direction()
@@ -128,6 +128,10 @@ class AR_control:
             right = 0
         return (left, right)
 
+    def move_turn_speed(self, x):
+        print "TURN & MOVE!",x
+        return (0,0)
+
     def speed_calc(self, data):
         # Get position information of AR tag
         location = PointStamped()
@@ -168,6 +172,12 @@ class AR_control:
             speed = int(effort*self.ref)
             Lspeed = speed
             Rspeed = speed
+
+            # Calculate turn speed
+            if not turn == 'n':
+                (left, right) = self.move_turn_speed(x_avg)
+                # print left, right
+
         elif direction == 'b':
             # Backward speed governing Gompertz equation
             a = 0.8                             # Max reverse speed will be 80% of max speed
@@ -179,7 +189,7 @@ class AR_control:
             Lspeed = speed
             Rspeed = speed
 
-        # Send speeds to PD controller
+        # Send speeds to PID controller
         self.argo.move(Lspeed, Rspeed)
 
         # Update previous location
@@ -202,63 +212,6 @@ class AR_control:
 
         self.heartbeat()
         return
-
-
-        # Calculate differences from previous point
-        dX = location.point.x - self.previous.point.x
-        dZ = location.point.z - self.previous.point.z
-        dT = location.header.stamp.to_sec() - self.previous.header.stamp.to_sec()
-
-        tVel = 0
-
-        if location.point.z < self.back_limit:
-            # print "reverse"
-            if location.point.x < -0.05: # Turning right
-                # print "R right"
-                Lspeed = int(speed + tVel)
-                Rspeed = int(speed)
-            elif location.point.x > 0.05: # Turning left
-                # print "R left"
-                Lspeed = int(speed)
-                Rspeed = int(speed + tVel)
-            else:
-                # print "R S"
-                Lspeed = speed
-                Rspeed = speed
-
-            self.argo.Lref = int(Lspeed)
-            self.argo.Rref = int(Rspeed)
-            (self.LBspeed, self.RBspeed) = self.argo.move(self.argo.Lref, self.argo.Rref)
-        elif location.point.z <= self.forward_limit:
-            print "stop"
-            # self.argo.move(0, 0)
-            # self.argo.Lprevious = 0
-            # self.argo.Rprevious = 0
-            # self.LFspeed = int(self.ref)    # Reset speeds to prevent error buildup
-            # self.LBspeed = int(self.ref*(-1))
-            # self.RFspeed = int(self.ref)
-            # self.RBspeed = int(self.ref*(-1))
-        else:
-            # print "forward"
-            if location.point.x < -0.1: # Turning left
-                # print "F left"
-                Lspeed = int(speed)
-                Rspeed = int(speed + tVel)
-            elif location.point.x > 0.1: # Turning right
-                # print "F right"
-                Lspeed = int(speed + tVel)
-                Rspeed = int(speed)
-            else:
-                # print "F S"
-                Lspeed = speed
-                Rspeed = speed
-            self.argo.Lref = int(Lspeed)
-            self.argo.Rref = int(Rspeed)
-            (self.LFspeed, self.RFspeed) = self.argo.move(self.argo.Lref, self.argo.Rref)
-
-        self.previous = location
-
-    # def turn_speed_calc(self, states, d, x):
 
 def main():
     rospy.init_node("argo_ar_tracker")
