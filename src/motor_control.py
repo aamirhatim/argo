@@ -40,29 +40,35 @@ class AR_control:
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
 
         self.previous = PointStamped()
-        self.previous_dir = 's'
-        self.previous_turn = 'n'
+        self.previous_dir = 'x'
+        self.previous_turn = 'x'
+        self.last_known = AlvarMarkers()
         self.no_tag_count = 0
 
     def heartbeat(self):
         state = self.argo.read_encoders()
+        if (self.no_tag_count <= 2) and len(self.last_known.markers) == 1:
+            if self.last_known.markers[0].id == 0:
+                self.speed_calc(self.last_known.markers[0])
+            return
 
         if (self.no_tag_count == 5) and (not self.previous_turn == 'n') and (self.previous_dir == 's'):
             # If tag was lost while turning, turn to the last know direction of the tag
             print "TURNING..."
             self.go_to_direction()
+            return
 
         if self.no_tag_count > 6:
             Lspeed = int(state.speedM2*.7)
             Rspeed = int(state.speedM1*.7)
-            if Lspeed**2 < 2500:
+            if Lspeed**2 < 1000:
                 Lspeed = 0
-            if Rspeed**2 < 2500:
+            if Rspeed**2 < 1000:
                 Rspeed = 0
             self.argo.force_speed(Lspeed, Rspeed)
 
-        if self.no_tag_count > 10:
-            if state.speedM1 <= 50:
+        if self.no_tag_count > 20:
+            if state.speedM1 <= 20:
                 self.argo.reset_controller()
 
     def go_to_direction(self):
@@ -92,10 +98,7 @@ class AR_control:
             Lspeed = curr_state.speedM2 + left
             Rspeed = curr_state.speedM1 + right
             self.argo.move(Lspeed, Rspeed)
-
-        # Stop the motors after Argo completes the turn
-        self.argo.move(0, 0)
-
+            rospy.sleep(.3)
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
@@ -139,9 +142,18 @@ class AR_control:
 
         # Slow down Argo if x displacement is large so it has a better chance of seeing the tag when turning
         (left, right) = self.stop_turn_speed(x)                 # First get the turn speed as if it were stopped
-        # print left,right
-        left = left*.5*np.cos(np.pi*wheel_speed/T)                 # Scale down stopped turn speed depending on Argo's current wheel speed
-        right = right*.5*np.cos(np.pi*wheel_speed/T)
+        left = int(left*.5*np.cos(np.pi*wheel_speed/T))         # Scale down stopped turn speed depending on Argo's current wheel speed
+        right = int(right*.5*np.cos(np.pi*wheel_speed/T))
+        return (left, right)
+
+    def ramp_down(self):
+        state = self.argo.read_encoders()
+        left = int(state.speedM2*.7)
+        right = int(state.speedM1*.7)
+        if left**2 < 1000:
+            left = 0
+        if right**2 < 1000:
+            right = 0
         return (left, right)
 
     def speed_calc(self, data):
@@ -164,9 +176,8 @@ class AR_control:
 
         # Calculate straight line speed (in QPPS)
         if direction == 's':
-            # print "stop"
-            Lspeed = 0
-            Rspeed = 0
+            print "stop"
+            (Lspeed, Rspeed) = self.ramp_down()
 
             # Calculate stopped turn speed
             if not turn == 'n':
@@ -175,6 +186,7 @@ class AR_control:
                 Rspeed += right
 
         elif direction == 'f':
+            print "F"
             # Forward speed governing Gompertz equation: y = e^(b*e^(c*s))
             a = 1                               # Equation amplitude
             b = -4.0                            # Shifts equations along x-axis
@@ -188,7 +200,7 @@ class AR_control:
             # Calculate turn speed
             if not turn == 'n':
                 (left, right) = self.move_turn_speed(x_avg)
-                print left, right
+                # print left, right
                 Lspeed += left
                 Rspeed += right
 
@@ -204,6 +216,7 @@ class AR_control:
             Rspeed = speed
 
         # Send speeds to PID controller
+        print Lspeed, Rspeed
         self.argo.move(Lspeed, Rspeed)
 
         # Update previous location
@@ -225,6 +238,7 @@ class AR_control:
             self.speed_calc(data.markers[0])
 
         self.heartbeat()
+        self.last_known = data
         return
 
 def main():
