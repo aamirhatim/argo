@@ -22,6 +22,7 @@ class AR_control:
         if self.argo.motor_status == 1:
             return
         self.argo.reset_controller()
+        self.argo.reset_encoders()
 
         self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
         print "Max speed set to:",self.ref,"QPPS."
@@ -102,19 +103,19 @@ class AR_control:
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
-            return 'b'                                      # Move backward
+            return 'b'                     # Move backward
         elif z >= self.forward_limit:
-            return 'f'                                      # Move forward
+            return 'f'                     # Move forward
         else:
-            return 's'                                      # Stop
+            return 's'                     # Stop
 
     def get_turn_direction(self, x):
         if x <= -self.x_limit:
-            return 'l'
+            return 'l'                      # Turn left
         elif x >= self.x_limit:
-            return 'r'
+            return 'r'                      # Turn right
         else:
-            return 'n'
+            return 'n'                      # No turn
 
     def stop_turn_speed(self, x):
         # Turn speed Gompertz equation
@@ -225,6 +226,8 @@ class AR_control:
         self.previous_turn = turn
 
     def follow(self, data):
+        self.argo.check_battery()
+
         # Only move if AR tag id 0 is identified
         if not len(data.markers) == 1:
             self.no_tag_count += 1

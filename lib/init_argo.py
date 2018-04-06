@@ -156,6 +156,9 @@ class Argo:
 
         self.move(Lspeed, Rspeed)
 
+    def reset_encoders(self):
+        self.argo.ResetEncoders(self.address)
+
     def read_encoders(self):
         mov = Encoder()
         t = rospy.Time.now()
@@ -178,3 +181,8 @@ class Argo:
 
         # self.encoder.publish(mov)
         return mov
+
+    def check_battery(self):
+        main = self.argo.ReadMainBatteryVoltage(self.address)
+        logic = self.argo.ReadLogicBatteryVoltage(self.address)
+        print main, logic
