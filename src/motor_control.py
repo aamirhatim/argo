@@ -99,7 +99,6 @@ class AR_control:
             Lspeed = curr_state.speedM2 + left
             Rspeed = curr_state.speedM1 + right
             self.argo.move(Lspeed, Rspeed)
-            # rospy.sleep(.1)
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
@@ -201,7 +200,6 @@ class AR_control:
             # Calculate turn speed
             if not turn == 'n':
                 (left, right) = self.move_turn_speed(x_avg)
-                # print left, right
                 Lspeed += left
                 Rspeed += right
 
@@ -215,6 +213,12 @@ class AR_control:
             speed = int(-1*effort*self.ref)     # Multiply by -1 to reverse motor rotation
             Lspeed = speed
             Rspeed = speed
+
+            # Calculate turn speed
+            if not turn == 'n':
+                (left, right) = self.move_turn_speed(x_avg*1.7)
+                Lspeed += left
+                Rspeed += right
 
         # Send speeds to PID controller
         print Lspeed, Rspeed
