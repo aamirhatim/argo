@@ -43,10 +43,9 @@ class AR_control:
         self.argo.reset_encoders()
         self.reset_previous()
 
-        # self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
-        # print "Max speed set to:",self.ref,"QPPS."
-        # self.argo.session_max = self.ref            # Set max speed for current session
-        self.argo.session_max = int(rospy.get_param("~speed")*self.argo.max_speed/100)
+        # Set max speed for current session
+        self.ref = int(rospy.get_param("~speed")*self.argo.max_speed/100)
+        self.argo.session_max = self.ref
         print "Max speed set to:",self.ref,"QPPS."
 
         # Set up subscriber
