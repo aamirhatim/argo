@@ -42,11 +42,12 @@ class AR_control:
         self.previous_turn = 'n'
         self.no_tag_count = 0
 
+        self.state = self.argo.read_encoders()
+
     def heartbeat(self):
         if (self.no_tag_count == 4) and (not self.previous_turn == 'n'):
             # If tag was lost while turning, turn to the last know direction of the tag
-            print "TURNING...
-            "
+            print "TURNING..."
             self.go_to_direction()
 
         if self.no_tag_count > 5:
@@ -68,19 +69,35 @@ class AR_control:
 
     def go_to_direction(self):
         target = self.previous.point
-        theta = get_angle(target)               # Calculate theta
-        arc = (self.argo.distance/2.0)*theta/2            # Calculate arc length to travel
-        num_ticks = abs(arc*self.argo.counts_per_m)     # Convert arc length to encoder counts
-        start = self.argo.read_encoders()               # Get current encoder info
-        enc = abs(start.encoderM1)
+        theta = get_angle(target)                       # Calculate theta
+        arc = (self.argo.distance/2.0)*theta            # Calculate arc length to travel
+        num_ticks = arc*self.argo.counts_per_m     # Convert arc length to encoder counts
+        self.state = self.argo.read_encoders()          # Get current encoder info
+        # enc = abs(self.state.encoderM1)
+        enc_final = enc + num_ticks
+        # enc_prev = enc
 
-        while abs(enc - abs(start.encoderM1)) <= num_ticks:
-            print "hi"
-            state = self.argo.read_encoders()
-            enc = abs(state.encoderM1)
+        while effort <= .05:
+            curr_state = self.argo.read_encoders()
+            remainder = enc_final - curr_state.encoderM1
 
-            (Lspeed, Rspeed) = self.stop_turn_speed(target.x)
+            # Compute an effort
+            T = num_ticks/2.0
+            effort = (.65)*np.sin((np.pi*remainder)/T)
+            if self.previous_turn == 'l':
+                left = int(-1*effort*self.ref)
+                right = int(effort*self.ref)
+            elif self.previous_turn == 'r':
+                left = int(effort*self.ref)
+                right = int(-1*effort*self.ref)
+
+            Lspeed = curr_state.speedM2 + left
+            Rspeed = curr_state.speedM1 + right
             self.argo.move(Lspeed, Rspeed)
+            rospy.sleep(.3)
+            
+        self.argo.move(0, 0)
+
 
     def get_line_direction(self, z):
         if z <= self.back_limit:
@@ -145,7 +162,7 @@ class AR_control:
                 (left, right) = self.stop_turn_speed(x_avg)
                 Lspeed += left
                 Rspeed += right
-                self.argo.move(Lspeed, Rspeed)
+                # self.argo.move(Lspeed, Rspeed)
 
             # Calculate turning speeds
             # if not -self.x_limit <= x_avg <= self.x_limit:
