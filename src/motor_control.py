@@ -7,7 +7,7 @@ from argo.msg import Encoder
 import rospy
 from ar_track_alvar_msgs.msg import * ## import AR tag custom messages
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, Point
 import numpy as np
 from math import exp, degrees
 
@@ -24,18 +24,23 @@ class AR_control:
         self.argo.reset_controller()
         self.argo.reset_encoders()
 
-        self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
-        print "Max speed set to:",self.ref,"QPPS."
-        self.argo.session_max = self.ref
+        self.previous = PointStamped()
 
         self.forward_limit = 0.65
         self.back_limit = 0.5
         self.x_limit = 0.1
         self.max_range = 3.0
+        self.speed_change_limit = 1000
+
+        self.reset_previous()
+
+        self.ref = int(input("Enter max speed (between 0 and 100): ") * self.argo.max_speed/100)
+        print "Max speed set to:",self.ref,"QPPS."
+        self.argo.session_max = self.ref
 
         self.ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, self.follow)
 
-        self.previous = PointStamped()
+
         self.previous_dir = 'x'
         self.previous_turn = 'x'
         self.last_known = AlvarMarkers()
@@ -66,6 +71,12 @@ class AR_control:
         if self.no_tag_count > 20:
             if state.speedM1 <= 20:
                 self.argo.reset_controller()
+                self.reset_previous()
+
+    def reset_previous(self):
+        p = Point(0.0, 0.0, (self.forward_limit + self.back_limit)/2.0)
+        self.previous.point = p
+        # print self.previous
 
     def go_to_direction(self):
         target = self.previous.point
@@ -151,6 +162,15 @@ class AR_control:
             right = 0
         return (left, right)
 
+    def ramp_up(self, Lspeed, Rspeed):
+        i = 0.1
+        while i < 1.0:
+            left = int(Lspeed*i)
+            right = int(Rspeed*i)
+            self.argo.move(Lspeed, Rspeed)
+            rospy.sleep(.1)
+            i += .1
+
     def speed_calc(self, data):
         # Get position information of AR tag
         location = PointStamped()
@@ -217,6 +237,15 @@ class AR_control:
 
         # Send speeds to PID controller
         print Lspeed, Rspeed
+
+        # Gradually increase speed if there is a big jump in wheel speeds
+        state = self.argo.read_encoders()
+        changeL = abs(state.speedM2 - Lspeed)
+        changeR = abs(state.speedM1 - Rspeed)
+
+        # if (changeL > self.speed_change_limit) or (changeR > self.speed_change_limit):
+        #     self.ramp_up(Lspeed, Rspeed)
+
         self.argo.move(Lspeed, Rspeed)
 
         # Update previous location
@@ -226,8 +255,8 @@ class AR_control:
 
     def follow(self, data):
         battery = self.argo.check_battery()
-        if battery < 600:
-            print "IM DYING :("
+        if battery < 60:
+            print "IM DYING :(", battery
             self.ramp_down()
             return
 
