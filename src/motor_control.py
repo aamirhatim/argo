@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+#############################
+## MOTOR CONTROL NODE NODE ##
+#############################
+# This node subscribes to the AR tag location topic (/ar_pose_marker)
+# and determines the appropriate motors speeds to send to the RoboClaw
+
 import sys
 sys.path.insert(0, "/home/aamirhatim/catkin_ws/src/argo/lib")
 from init_argo import Argo
