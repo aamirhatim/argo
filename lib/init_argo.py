@@ -183,6 +183,5 @@ class Argo:
         return mov
 
     def check_battery(self):
-        main = self.argo.ReadMainBatteryVoltage(self.address)
-        logic = self.argo.ReadLogicBatteryVoltage(self.address)
-        print main, logic
+        battery = self.argo.ReadMainBatteryVoltage(self.address)
+        return battery[1]

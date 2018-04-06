@@ -226,7 +226,8 @@ class AR_control:
         self.previous_turn = turn
 
     def follow(self, data):
-        self.argo.check_battery()
+        battery = self.argo.check_battery()
+        print battery
 
         # Only move if AR tag id 0 is identified
         if not len(data.markers) == 1:
