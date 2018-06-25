@@ -2,6 +2,8 @@
 #### Northwestern MSR Winter Project 2018
 #### Aamir Husain
 
+**Please see my [portfolio post](http://aamirhatim.com/projects/argo/argo.php) to read more about how the code works.**
+
 ## Part 1: Requirements
 ### Hardware
 - Raspberry Pi 3 B
@@ -14,7 +16,7 @@
 
 ### Software
 - ROS Kinetic
-- Ubuntu MATE (Rasbian OS also compatible, but it's frustrating to use for ROS)
+- Ubuntu MATE (Rasbian OS also compatible)
 
 ### ROS packages:
 - [raspicam_node](https://github.com/dganbold/raspicam_node) Provides an easy way to interfave the Raspberry Pi camera module with ROS
@@ -68,7 +70,14 @@ $ cd ~/catkin_ws
 $ catkin_make
 ```
 
-## Part 4: Nodes
+## Part 4: Running Modes
+### Autonomous Tracking Mode
+In this mode, Argo will search for an AR tag and begin following it. Run the following commands to launch the program:
+```
+$ roslaunch argo find_tag.launch
+```
+Within [`find_tag.launch`](launch/find_tag.launch) you can change the size of the AR tag as well as the error tolerance.
+
 ### Manual Drive Mode
 To control with your keyboard, run the [`manual_drive.py`](/src/manual_drive.py) node:
 ```
@@ -80,11 +89,4 @@ Control Argo using the WASD keys. Press 'e' to stop and 'q' to quit the node. Yo
 Run the [`path_driver.py`](/src/path_driver.py) node to have Argo follow a pre-programmed path: a line, a figure eight, or a circle. The robot will continue to follow its last command on quitting so you must run the stop command in `manual_drive.py` to stop it.
 ```
 $ rosrun argo path_driver.py
-```
-
-### Autonomous Tracking Mode
-In this mode, Argo will search for an AR tag and begin following it. Run the following commands in two separate terminals:
-```
-$ roslaunch argo find_tag.launch
-$ rosrun argo motor_control.py
 ```
